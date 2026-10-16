@@ -1,0 +1,152 @@
+'use client';
+
+import React, { createContext, useContext, useState, useEffect } from 'react';
+
+const CartContext = createContext();
+
+export function CartProvider({ children }) {
+  const [cart, setCart] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // មុខងារទាញយកទិន្នន័យពី Laravel API
+  const fetchCartItems = async () => {
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+      if (!token) return;
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/api/cart/items`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      });
+
+      // ពិនិត្យមើលថាតើ Server ឆ្លើយតបមកជា JSON ដែរឬទេ (ការពាររឿង Error 500 HTML)
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        console.error("Backend returned non-JSON response (Likely Server Error 500).");
+        return;
+      }
+
+      const result = await response.json();
+      if (response.ok && (result.status || result.data)) {
+        const cartData = result.data || result;
+        const formattedCart = cartData.map(item => ({
+          id: item.product_id || item.id,
+          name: item.product?.product_name || item.name || 'Product',
+          price: item.product?.product_price || item.price || 0,
+          quantity: item.quantity,
+          variant: item.variant || 'Standard'
+        }));
+        setCart(formattedCart);
+      }
+    } catch (error) {
+      console.error('Error fetching cart:', error);
+    }
+  };
+
+  useEffect(() => {
+    // ហៅទាញយកទិន្នន័យម្ដងពេលចាប់ផ្ដើមដំបូង
+    fetchCartItems();
+
+    // កំណត់ឱ្យទាញយកទិន្នន័យថ្មីស្វ័យប្រវត្តិរៀងរាល់ ២ វិនាទី (2000 milliseconds)
+    const interval = setInterval(() => {
+      fetchCartItems();
+    }, 2000);
+
+    // សម្អាត interval ចោលនៅពេល Component ត្រូវបិទ (Cleanup) ដើម្បីការពារ Memory Leak
+    return () => clearInterval(interval);
+  }, []);
+
+  const addToCart = async (product) => {
+    const qty = product.quantity || 1;
+
+    // ធ្វើបច្ចុប្បន្នភាព State លើ Frontend ជាបន្ទាន់ភ្លាមៗ
+    setCart((prevCart) => {
+      const existingIndex = prevCart.findIndex(
+        (item) => item.id === product.id && item.variant === (product.variant || 'Standard')
+      );
+
+      if (existingIndex > -1) {
+        const updated = [...prevCart];
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          quantity: updated[existingIndex].quantity + qty
+        };
+        return updated;
+      } else {
+        return [
+          ...prevCart,
+          {
+            id: product.id,
+            name: product.name || product.product_name || 'Product',
+            price: product.price || product.product_price || 0,
+            quantity: qty,
+            variant: product.variant || 'Standard',
+          },
+        ];
+      }
+    });
+
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+      if (!token) return;
+
+      await fetch('http://127.0.0.1:8000/api/cart/add', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          product_id: product.id,
+          variant_id: product.variant_id || null,
+          quantity: qty,
+        }),
+      });
+    } catch (error) {
+      console.error('Error syncing cart with backend:', error);
+    }
+  };
+
+  const removeFromCart = async (productId, variant = 'Standard') => {
+    setCart((prevCart) => prevCart.filter((item) => !(item.id === productId && item.variant === variant)));
+
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+      if (!token) return;
+
+      await fetch(`http://127.0.0.1:8000/api/cart/remove`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({ product_id: productId }),
+      });
+    } catch (error) {
+      console.error('Error removing item:', error);
+    }
+  };
+
+  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+  return (
+    <CartContext.Provider value={{ cart, addToCart, removeFromCart, totalItems, totalPrice, fetchCartItems }}>
+      {children}
+    </CartContext.Provider>
+  );
+}
+
+export function useCart() {
+  const context = useContext(CartContext);
+  if (!context) {
+    throw new Error('useCart must be used within a CartProvider');
+  }
+  return context;
+}
