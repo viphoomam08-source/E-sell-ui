@@ -6,18 +6,7 @@ import CustomAlert from '../../component/CustomAlert';
 import ViewPro from '../../Pages/ViewPro';
 import Link from 'next/link';
 
-export default function CategoryPage({ params }) {
-  // Resolve params safely for Next.js
-  const [categoryId, setCategoryId] = useState(null);
-
-  useEffect(() => {
-    if (params && typeof params.then === 'function') {
-      params.then((p) => setCategoryId(p.id));
-    } else if (params?.id) {
-      setCategoryId(params.id);
-    }
-  }, [params]);
-
+export default function CategoryClientView({ categoryId }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -231,12 +220,4 @@ export default function CategoryPage({ params }) {
       </Link>
     );
   }
-}
-
-// Required for static export on Render
-export async function generateStaticParams() {
-  return [
-    { id: '1' },
-    { id: '2' }
-  ];
 }
