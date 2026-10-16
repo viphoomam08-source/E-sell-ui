@@ -1,14 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
 import { Star, MapPin, Clock, Bike, Plus, ShieldCheck, MessageCircle } from 'lucide-react';
 import Banner from './banner';
 import Chat from './chat';
 
-export default function ShopView() {
-  const params = useParams();
-  const id = params?.id;
+export default function ShopClientView({ shopId }) {
+  const id = shopId;
 
   const [shop, setShop] = useState(null);
   const [products, setProducts] = useState([]);
@@ -256,12 +254,4 @@ export default function ShopView() {
 
     </div>
   );
-}
-
-// THIS MUST BE OUTSIDE ShopView
-export async function generateStaticParams() {
-  return [
-    { id: '1' },
-    { id: '2' }
-  ];
 }
