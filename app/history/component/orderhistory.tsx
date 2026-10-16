@@ -89,7 +89,6 @@ export default function OrderHistory() {
             <p className="text-xs">ទឹកប្រាក់សរុប: ${order.total_amount}</p>
             <p className="text-xs">ស្ថានភាព: {order.status}</p>
 
-            {/* បង្ហាញទំនិញនីមួយៗដែលស្ថិតក្នុង order នេះ */}
             <div className="bg-gray-700 p-2 rounded mt-2 space-y-1">
               <p className="text-xs font-semibold text-yellow-300">ទំនិញក្នុងបញ្ជាទិញ៖</p>
               {Array.isArray(order.items) && order.items.map((item, index) => (
