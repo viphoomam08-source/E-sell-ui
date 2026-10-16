@@ -41,4 +41,4 @@ COPY --chown=www-data:www-data . /var/www/html
 
 # Expose port 9000 and start php-fpm server
 EXPOSE 9000
-CMD ["php-fpm"]
+CMD php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=$PORT
