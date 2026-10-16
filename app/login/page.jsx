@@ -1,8 +1,9 @@
 'use client';
-import React, { useState } from 'react';
+
+import React, { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
-export default function LoginPage() {
+function LoginForm() {
   const searchParams = useSearchParams();
   const role = searchParams.get('role') || 'buyer'; // ទាញយក role ពី URL (buyer ឬ seller)
 
@@ -59,5 +60,13 @@ export default function LoginPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-gray-900 text-white text-sm">Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }
