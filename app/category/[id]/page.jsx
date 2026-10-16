@@ -1,11 +1,23 @@
 'use client';
+
 import React, { useState, useEffect, useRef } from 'react';
 import { ShoppingCart, Heart, ChevronLeft, ChevronRight, ArrowRight, Tag } from 'lucide-react';
 import CustomAlert from '../../component/CustomAlert';
 import ViewPro from '../../Pages/ViewPro';
 import Link from 'next/link';
 
-export default function ProductCard({ selectedSubId }) {
+export default function CategoryPage({ params }) {
+  // Resolve params safely for Next.js
+  const [categoryId, setCategoryId] = useState(null);
+
+  useEffect(() => {
+    if (params && typeof params.then === 'function') {
+      params.then((p) => setCategoryId(p.id));
+    } else if (params?.id) {
+      setCategoryId(params.id);
+    }
+  }, [params]);
+
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -53,7 +65,7 @@ export default function ProductCard({ selectedSubId }) {
       });
   }, []);
 
-  const filteredProducts = selectedSubId 
+  const filteredProducts = categoryId 
     ? products.filter(p => {
         const prodCatId = 
           p.category_id ?? 
@@ -62,7 +74,7 @@ export default function ProductCard({ selectedSubId }) {
           p.subcategory_id ?? 
           p.sub_category?.id ??
           p.cat_id;
-        return prodCatId == selectedSubId;
+        return prodCatId == categoryId;
       }) 
     : products;
 
@@ -112,8 +124,8 @@ export default function ProductCard({ selectedSubId }) {
       {/* Header Section */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-lg sm:text-2xl font-bold text-blue-600 tracking-tight">ទំនិញទូទៅ</h2>
-          <p className="text-xs text-blue-600 mt-0.5">ស្វែងរកទិញថ្មី</p>
+          <h2 className="text-lg sm:text-2xl font-bold text-blue-600 tracking-tight">ទំនិញតាមប្រភេទ</h2>
+          <p className="text-xs text-blue-600 mt-0.5">ស្វែងរកទិញតាមប្រភេទ</p>
         </div>  
 
         <div className="flex items-center gap-2">
@@ -135,7 +147,7 @@ export default function ProductCard({ selectedSubId }) {
       
       {filteredProducts.length === 0 ? (
         <div className="text-center py-8 text-xs text-slate-500 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-          📦 No products found for this subcategory.
+          📦 No products found for this category.
         </div>
       ) : showAll ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 items-start">
@@ -219,4 +231,12 @@ export default function ProductCard({ selectedSubId }) {
       </Link>
     );
   }
+}
+
+// Required for static export on Render
+export async function generateStaticParams() {
+  return [
+    { id: '1' },
+    { id: '2' }
+  ];
 }

@@ -1,4 +1,5 @@
 'use client';
+
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { Star, MapPin, Clock, Bike, Plus, ShieldCheck, MessageCircle } from 'lucide-react';
@@ -15,7 +16,6 @@ export default function ShopView() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('All');
   
-  // State សម្រាប់គ្រប់គ្រងការបើក/បិទប្រអប់ Chat
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   useEffect(() => {
@@ -24,12 +24,18 @@ export default function ShopView() {
     const fetchShopDetails = async () => {
       try {
         setLoading(true);
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
-        const response = await fetch(`${import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL}/api/shop-details/${id}`, {
+        const response = await fetch(`${API_URL}/api/shop-details/${id}`, {
           headers: { 
             'Accept': 'application/json',
           }
         });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch shop details: ${response.statusText}`);
+        }
+
         const data = await response.json();
 
         const fetchedShop = data.seller || data.shop || data;
@@ -76,7 +82,9 @@ export default function ShopView() {
         item.category_name === activeTab || 
         item.category === activeTab
       );
-  
+
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+
   return (
     <div className="min-h-screen bg-gray-50 pb-16 font-['Kantumruy_Pro'] relative">
       
@@ -85,7 +93,7 @@ export default function ShopView() {
         <div className="h-48 sm:h-64 w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 relative overflow-hidden">
           {backgroundImage ? (
             <img 
-               src={`${import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL}/storage/${backgroundImage}`} 
+               src={`${API_URL}/storage/${backgroundImage}`} 
                alt="Store Cover" 
                className="w-full h-full object-cover"
             />
@@ -102,7 +110,7 @@ export default function ShopView() {
             <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full border-4 border-white bg-blue-600 shadow-xl overflow-hidden flex-shrink-0 flex items-center justify-center text-white font-bold text-3xl z-10">
               {profileImage ? (
                 <img 
-                  src={`${import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL}/storage/${profileImage}`} 
+                  src={`${API_URL}/storage/${profileImage}`} 
                   alt={shopName} 
                   className="w-full h-full object-cover"
                 />
@@ -196,7 +204,7 @@ export default function ShopView() {
                     <div className="w-24 h-24 sm:w-28 sm:h-28 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center relative">
                       {productImage ? (
                         <img 
-                          src={`${import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL}/storage/${productImage}`} 
+                          src={`${API_URL}/storage/${productImage}`} 
                           alt={productName} 
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
                         />
@@ -248,4 +256,12 @@ export default function ShopView() {
 
     </div>
   );
+}
+
+// THIS MUST BE OUTSIDE ShopView
+export async function generateStaticParams() {
+  return [
+    { id: '1' },
+    { id: '2' }
+  ];
 }
