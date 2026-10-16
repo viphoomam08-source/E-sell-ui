@@ -2,7 +2,13 @@
 import React, { useState, useEffect } from 'react';
 
 export default function OrderHistory() {
-  const [orders, setOrders] = useState([]);
+  const [orders, setOrders] = useState<{
+    id: number;
+    order_code: string;
+    total_amount: number;
+    status: string;
+    items?: { product_name: string; quantity: number; product_price: number; seller_name: string }[];
+  }[]>([]);
   const [loading, setLoading] = useState(true);
 
   // មុខងារទាញយកប្រវត្តិ Order

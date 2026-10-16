@@ -5,9 +5,9 @@ import { ShieldCheck, Clock, User, AlertCircle, RefreshCw } from 'lucide-react';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function AuditLog() {
-  const [logs, setLogs] = useState([]);
+  const [logs, setLogs] = useState<{ id: number; action: string; description: string; created_at: string }[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchAuditLogs = async () => {
     setLoading(true);

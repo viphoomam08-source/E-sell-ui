@@ -10,7 +10,7 @@ export default function DiscountDisplay() {
 
   const fetchDiscountedProducts = async (isBackground = false) => {
     try {
-      const res = await fetch(`${import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL}/api/dicount`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/dicount`, {
         method: 'GET',
         headers: { 'Accept': 'application/json' },
       });
@@ -23,7 +23,7 @@ export default function DiscountDisplay() {
       if (!isBackground) setLoading(false);
     } catch (err) {
       if (!isBackground) {
-        setError(err.message);
+        setError(err instanceof Error ? err.message : 'Failed to fetch discounted products');
         setLoading(false);
       }
     }
@@ -89,7 +89,7 @@ export default function DiscountDisplay() {
               {/* រូបភាពទំនិញ */}
               <div className="relative h-48 w-full bg-slate-900 overflow-hidden flex items-center justify-center">
                 <img 
-                  src={product.image ? `${import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL}/storage/${product.image}` : "https://images.unsplash.com/photo-1542291026-7eec264c27ff"} 
+                  src={product.image ? `${process.env.NEXT_PUBLIC_API_URL}/storage/${product.image}` : "https://images.unsplash.com/photo-1542291026-7eec264c27ff"}
                   alt={product.product_name} 
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />
@@ -106,7 +106,7 @@ export default function DiscountDisplay() {
                 <div>
                   <div className="flex items-center gap-2 mb-2 pb-2 border-b border-slate-100">
                     <div className="w-7 h-7 rounded-full overflow-hidden bg-slate-100 flex-shrink-0">
-                      <img src={sellerPic ? `${import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL}/storage/${sellerPic}` : ""} alt="" className="w-full h-full object-cover" />
+                      <img src={sellerPic ? `${process.env.NEXT_PUBLIC_API_URL}/storage/${sellerPic}` : ""} alt="" className="w-full h-full object-cover" />
                     </div>
                     <h2 className="text-sm font-extrabold text-slate-900 truncate">
                       {sellerName}

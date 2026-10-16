@@ -533,7 +533,7 @@ export default function OrderTable({ searchTerm }: { searchTerm?: string }) {
                                                                                                 </td>
                                                                                                 <td className="py-2.5 px-4">
                                                                                                     {ProductImage ? (
-                                                                                                        <img src={`${import.meta.env.VITE_API_URL}${ProductImage}`} alt={productName} className="w-16 h-16 object-cover" />
+                                                                                                        <img src={`${process.env.NEXT_PUBLIC_API_URL}${ProductImage}`} alt={productName} className="w-16 h-16 object-cover" />
                                                                                                     ) : (
                                                                                                         <div className="w-16 h-16 bg-slate-200 flex items-center justify-center">
                                                                                                             <Package className="w-8 h-8 text-slate-400" />

@@ -36,7 +36,7 @@ export default function RelatedProduct({ products }) {
         {displayedProducts.map((item) => {
           const imgRaw = item.image || item.image_url;
           const imgUrl = imgRaw 
-            ? (imgRaw.startsWith('http') ? imgRaw : `${import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL}/storage/${imgRaw}`)
+            ? (imgRaw.startsWith('http') ? imgRaw : `${process.env.NEXT_PUBLIC_API_URL}/storage/${imgRaw}`)
             : "https://images.unsplash.com/photo-1542291026-7eec264c27ff";
 
           const name = item.product_name || item.name || 'ផលិតផលគ្មានឈ្មោះ';

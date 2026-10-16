@@ -18,7 +18,7 @@ const CategoryItem = ({ category, onSelect, isSelected, isScrolled }) => {
                 <div className="w-full h-full rounded-full overflow-hidden bg-white border border-slate-200/60 shadow-inner">
                     {category.image_category ? (
                         <img 
-                            src={`${import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL}/storage/${category.image_category}`} 
+                            src={`${process.env.NEXT_PUBLIC_API_URL}/storage/${category.image_category}`}
                             alt={category.category_name} 
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 pointer-events-none" 
                         />
@@ -48,7 +48,7 @@ export default function Category({ onSelectSubcategory, selectedSubId }) {
 
     const fetchCategories = async () => {
         try {
-            const response = await fetch(`${import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL}/api/category-list`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/category-list`, {
                 headers: { 'Accept': 'application/json' }
             });
             const data = await response.json();
@@ -174,7 +174,7 @@ export default function Category({ onSelectSubcategory, selectedSubId }) {
                                             }`}
                                         >
                                             {sub.image_category ? (
-                                                <img src={`${import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL}/storage/${sub.image_category}`} alt="" className="w-3.5 h-3.5 object-cover rounded-full shadow-2xs" />
+                                                <img src={`${process.env.NEXT_PUBLIC_API_URL}/storage/${sub.image_category}`} alt="" className="w-3.5 h-3.5 object-cover rounded-full shadow-2xs" />
                                             ) : (
                                                 <div className="w-3.5 h-3.5 bg-slate-100 rounded-full flex items-center justify-center text-[9px] text-slate-400">-</div>
                                             )}

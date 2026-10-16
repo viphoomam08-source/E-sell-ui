@@ -40,14 +40,14 @@ export default function ProductsModule() {
                 </div>
 
                 {open && (
-                    <AddProuct onClose={() => setOpen(false)} />
+                    <AddProuct onClose={() => setOpen(false)} onSuccess={() => setOpen(false)} />
                 )}
             </div>
 
                 
           
            <div className='m-3'>
-                <ProTable />
+                <ProTable searchTerm={searchTerm} />
             </div>
         </>
     );

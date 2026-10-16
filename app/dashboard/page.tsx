@@ -17,7 +17,6 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function App() {
   const [activeModule, setActiveModule] = useState('dashboard');
-  const [openadmin, setopenadmin] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false); // Mobile drawer state
 
   // 📦 State សម្រាប់ផ្ទុកទិន្នន័យ Stock Alert ដែលទាញយកពី API
@@ -258,12 +257,9 @@ export default function App() {
             <SellerOrderNotifications onOpenOrders={() => setActiveModule('order')} />
 
             <div className="flex items-center gap-3 pl-2 sm:pl-4 border-l border-slate-200">
-              <button 
-                onClick={() => setopenadmin(true)} 
-                className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm hover:bg-blue-200 transition cursor-pointer"
-              >
+              <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">
                 AD
-              </button>
+              </div>
               <div className="hidden sm:block text-left">
                 <p className="text-sm font-semibold text-slate-800">Seller</p>
                 <p className="text-xs text-slate-400">Seller</p>
@@ -271,8 +267,6 @@ export default function App() {
             </div>
           </div>
         </header>
-
-        {openadmin && (<Adminform onClose={() => setopenadmin(false)} />)}
 
         {/* Dynamic Component Rendering */}
         <main className="flex-1 p-4 sm:p-8 overflow-y-auto">

@@ -52,7 +52,7 @@ export default function CheckoutPage() {
       const fullShippingAddress = `${formData.address}, ${formData.city}, ឈ្មោះអ្នកទទួល: ${formData.fullName}`;
 
       const orderItems = cart.map(item => ({
-        product_id: item.id || item.product_id,
+        product_id: item.id,
         quantity: item.quantity || 1,
         price: item.price || 0
       }));
@@ -140,7 +140,7 @@ export default function CheckoutPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">អាសយដ្ឋានដឹកជញ្ជូន (Address)</label>
                 <textarea 
                   name="address"
-                  rows="3"
+                  rows={3}
                   required
                   value={formData.address}
                   onChange={handleChange}
@@ -225,7 +225,7 @@ export default function CheckoutPage() {
                   {cart.map((item, index) => (
                     <div key={index} className="flex justify-between items-center border-b pb-3">
                       <div>
-                        <h4 className="text-sm font-medium text-gray-800">{item.name || item.product_name}</h4>
+                        <h4 className="text-sm font-medium text-gray-800">{item.name}</h4>
                         <p className="text-xs text-gray-500">ចំនួន: {item.quantity} {item.variant ? `| Variant: ${item.variant}` : ''}</p>
                       </div>
                       <span className="text-sm font-bold text-gray-900">${(item.price * item.quantity).toFixed(2)}</span>

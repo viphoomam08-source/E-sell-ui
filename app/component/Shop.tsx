@@ -15,7 +15,7 @@ const ShopCard = ({ shop }) => {
                 <div className="w-full h-full rounded-lg overflow-hidden bg-slate-100 relative">
                     {imagePath ? (
                         <img 
-                            src={`${import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL}/storage/${imagePath}`} 
+                            src={`${process.env.NEXT_PUBLIC_API_URL}/storage/${imagePath}`}
                             alt={shopName} 
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300 pointer-events-none" 
                         />
@@ -40,7 +40,7 @@ export default function Shop() {
 
     const fetchShops = async () => {
         try {
-            const response = await fetch(`${import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL}/api/seller-list`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/seller-list`, {
                 headers: { 'Accept': 'application/json' }
             });
             const data = await response.json();

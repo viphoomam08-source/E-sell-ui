@@ -19,8 +19,8 @@ export default function BannerSlider({ sellerId }) {
       try {
         // Fixed: Properly assign the endpoint with a fallback if sellerId is not passed
         const endpoint = sellerId 
-          ? `${import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL}/api/seller/${sellerId}/discounts`
-          : `${import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL}/api/dicount`;
+          ? `${process.env.NEXT_PUBLIC_API_URL}/api/seller/${sellerId}/discounts`
+          : `${process.env.NEXT_PUBLIC_API_URL}/api/dicount`;
 
         const response = await fetch(endpoint, {
           headers: {
@@ -34,7 +34,7 @@ export default function BannerSlider({ sellerId }) {
 
         const formattedBanners = discountProducts.map((item) => ({
           id: item.id,
-          image: item.image ? `${import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL}/storage/${item.image}` : '/banners/default.jpg',
+          image: item.image ? `${process.env.NEXT_PUBLIC_API_URL}/storage/${item.image}` : '/banners/default.jpg',
           title: item.product_name,
           subtitle: `បញ្ចុះតម្លៃសល់ត្រឹម $${Number(item.discount_price).toFixed(2)} (តម្លៃដើម $${Number(item.product_price).toFixed(2)})`,
           productId: item.id

@@ -13,7 +13,7 @@ function Chat({ isOpen = false, onClose, shopId }) {
     const fetchShopChatDetails = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL}/api/shop-details/${shopId}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/shop-details/${shopId}`, {
           headers: { 
             'Accept': 'application/json',
           }
@@ -50,7 +50,7 @@ function Chat({ isOpen = false, onClose, shopId }) {
           <div className="w-9 h-9 rounded-full bg-white/20 overflow-hidden flex items-center justify-center font-bold text-sm border-2 border-white/40 flex-shrink-0">
             {profileImage ? (
               <img 
-                src={`${import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL}/storage/${profileImage}`} 
+                src={`${process.env.NEXT_PUBLIC_API_URL}/storage/${profileImage}`}
                 alt={shopName} 
                 className="w-full h-full object-cover"
               />

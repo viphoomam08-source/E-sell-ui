@@ -48,7 +48,7 @@ export default function ProductCard({ selectedSubId }) {
       if (!isBackground) setLoading(false);
     } catch (err) {
       if (!isBackground) {
-        setError(err.message);
+        setError(err instanceof Error ? err.message : 'Failed to fetch products');
         setLoading(false);
       }
     }

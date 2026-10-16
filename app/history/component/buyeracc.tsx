@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 
 export default function BuyerAcc() {
-  const [buyerInfo, setBuyerInfo] = useState({ username: '', email: '' });
+  const [buyerInfo, setBuyerInfo] = useState<{ id?: number; username: string; email: string }>({ username: '', email: '' });
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
@@ -84,7 +84,7 @@ export default function BuyerAcc() {
       if (res.ok && data.status) {
         showNotification(data.message || 'ផ្លាស់ប្ដូរពាក្យសម្ងាត់បានជោគជ័យ!', 'success');
         setShowPasswordForm(false);
-        setPasswordData({ current_pass: '', new_pass: '', new_pass_confirmation: '' });
+        setPasswordData({ current_pass: '', new_pass: '', new_password_confirmation: '' });
       } else {
         showNotification(data.message || 'ពាក្យសម្ងាត់បច្ចុប្បន្នមិនត្រូវគ្នាទេ', 'error');
       }

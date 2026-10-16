@@ -17,7 +17,7 @@ export default function SecondaryNav() {
   const [activeCategory, setActiveCategory] = useState(null);
 
   useEffect(() => {
-    fetch(`${import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL}/api/category-list`)
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/category-list`)
       .then((res) => res.json())
       .then((data) => {
         const catList = data.list || data.category || data.data || [];

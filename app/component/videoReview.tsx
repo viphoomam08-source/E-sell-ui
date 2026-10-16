@@ -18,7 +18,7 @@ export default function VideoReview() {
     const fetchVideos = async () => {
       setLoading(true);
       setError('');
-      const baseUrl = import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
       try {
         const response = await fetch(`${baseUrl}/api/productSell-list_videos`, {
@@ -47,7 +47,7 @@ export default function VideoReview() {
 
         setReels(formattedReels);
       } catch (err) {
-        setError(err.message || 'មានបញ្ហាក្នុងការទាញយកទិន្នន័យ។');
+        setError(err instanceof Error ? err.message : 'មានបញ្ហាក្នុងការទាញយកទិន្នន័យ។');
       } finally {
         setLoading(false);
       }

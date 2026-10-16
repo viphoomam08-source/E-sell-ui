@@ -48,7 +48,9 @@ export default function UserProfileMenu() {
   // ទាញយករូបភាព ឬ អក្សរផ្ដើម (Initials)
   const displayName = user?.name || user?.username || user?.seller_name || 'User';
   const initial = displayName.charAt(0).toUpperCase();
-  const profilePicUrl = user?.profile_pic ? `http://127.0.0.1:8000/storage/${user.profile_pic}` : null;
+  const profilePicUrl = user?.profile_pic
+    ? `${process.env.NEXT_PUBLIC_API_URL}/storage/${user.profile_pic}`
+    : null;
 
   return (
     <div className="relative" ref={dropdownRef}>

@@ -45,7 +45,7 @@ export default function AddProductModal({ productId, onClose, token }) {
         }
 
         try {
-            const baseUrl = import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL;
+            const baseUrl = process.env.NEXT_PUBLIC_API_URL;
             const response = await fetch(`${baseUrl}/api/product-variants/${productId}`, {
                 method: 'POST',
                 headers: {

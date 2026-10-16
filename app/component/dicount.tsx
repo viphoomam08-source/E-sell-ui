@@ -13,7 +13,7 @@ const calculateDiscountPercent = (product) => {
 };
 
 const getImageUrl = (path, defaultUrl) => {
-    return path ? `${import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL}/storage/${path}` : defaultUrl;
+    return path ? `${process.env.NEXT_PUBLIC_API_URL}/storage/${path}` : defaultUrl;
 };
 
 // ==========================================
@@ -95,7 +95,7 @@ export default function SpotlightDiscountLayout() {
     };
 
     useEffect(() => {
-        fetch(`${import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL}/api/top-three-discounts`)
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/top-three-discounts`)
             .then((res) => res.json())
             .then((response) => {
                 console.log("API Response Data:", response);

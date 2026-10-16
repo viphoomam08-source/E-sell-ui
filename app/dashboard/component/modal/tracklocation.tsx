@@ -6,8 +6,8 @@ import { MapPin, Navigation, Loader2, ShieldAlert } from 'lucide-react';
 export default function LocationPopup() {
   const [showModal, setShowModal] = useState(true); // បង្ហាញ Popup ពេលចូលមកដល់
   const [loading, setLoading] = useState(false);
-  const [location, setLocation] = useState(null);
-  const [error, setError] = useState(null);
+  const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // មុខងារទាញយកទីតាំងពេលចុច "អនុញ្ញាត"
   const handleAllowLocation = () => {

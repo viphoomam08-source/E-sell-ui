@@ -20,7 +20,7 @@ export default function ProTable({ searchTerm }) {
     const fetchProducts = async () => {
         setLoading(true);
         setError('');
-        const baseUrl = import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL;
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
         try {
             const endpoint = searchTerm 
@@ -73,7 +73,7 @@ export default function ProTable({ searchTerm }) {
 
     const handleDelete = async (id) => {
         if (!window.confirm("តើអ្នកពិតជាចង់លុបផលិតផលនេះមែនទេ?")) return;
-        const baseUrl = import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL;
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL;
         
         try {
             const response = await fetch(`${baseUrl}/api/product-delete/${id}`, {
@@ -169,7 +169,7 @@ export default function ProTable({ searchTerm }) {
                                                             {/* Product Image */}
                                                             {product.image ? (
                                                                 <img 
-                                                                    src={`${import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL}/storage/${product.image}`} 
+                                                                    src={`${process.env.NEXT_PUBLIC_API_URL}/storage/${product.image}`}
                                                                     alt={product.product_name} 
                                                                     className="w-12 h-12 object-cover rounded-xl border border-slate-200 shadow-xs shrink-0"
                                                                 />
@@ -260,7 +260,7 @@ export default function ProTable({ searchTerm }) {
                                                                         {product.image && (
                                                                             <div className="flex flex-col items-center w-full">
                                                                                 <img 
-                                                                                    src={`${import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL}/storage/${product.image}`} 
+                                                                                    src={`${process.env.NEXT_PUBLIC_API_URL}/storage/${product.image}`}
                                                                                     alt={product.product_name} 
                                                                                     className="w-28 h-28 object-cover rounded-xl border border-slate-200 shadow-sm"
                                                                                 />
@@ -271,7 +271,7 @@ export default function ProTable({ searchTerm }) {
                                                                         {(product.video || product.product_video) && (
                                                                             <div className="flex flex-col items-center w-full">
                                                                                 <video 
-                                                                                    src={`${import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL}/storage/${product.video || product.product_video}`} 
+                                                                                    src={`${process.env.NEXT_PUBLIC_API_URL}/storage/${product.video || product.product_video}`}
                                                                                     className="w-full h-28 object-cover rounded-xl border border-slate-200 shadow-sm bg-black"
                                                                                     controls
                                                                                 />

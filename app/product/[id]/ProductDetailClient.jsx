@@ -26,7 +26,7 @@ export function ProductDetail() {
     if (!id) return;
     
     // ១. ទាញយកព័ត៌មានលម្អិតផលិតផល
-    fetch(`${import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL}/api/product/${id}`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/product/${id}`, {
       headers: { 'Accept': 'application/json' }
     })
       .then(res => res.json())
@@ -42,7 +42,7 @@ export function ProductDetail() {
         // ២. ប្រើប្រាស់ seller_id ផ្ទាល់ពីតារាង product_sellers ដើម្បីហៅ API relatedBySeller
         const sellerId = item.seller_id;
         if (sellerId) {
-          fetch(`${import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL}/api/product-seller/${sellerId}/${id}`, {
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/product-seller/${sellerId}/${id}`, {
             headers: { 'Accept': 'application/json' }
           })
             .then(res => res.json())
@@ -148,7 +148,7 @@ export function ProductDetail() {
     }
 
     try {
-      const response = await fetch(`${import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL}/api/cart/add`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart/add`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -195,7 +195,7 @@ export function ProductDetail() {
     }
 
     try {
-      const response = await fetch(`${import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL}/api/cart/add`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart/add`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

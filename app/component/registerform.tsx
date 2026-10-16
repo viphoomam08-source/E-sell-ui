@@ -43,8 +43,8 @@ export default function Registerform({ isOpen, onClose }) {
 
       if (isLoginMode) {
         apiEndpoint = role === 'seller' 
-          ? `${import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL}/api/seller-login` 
-          : `${import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL}/api/buyer-login`;
+          ? `${process.env.NEXT_PUBLIC_API_URL}/api/seller-login`
+          : `${process.env.NEXT_PUBLIC_API_URL}/api/buyer-login`;
 
         const loginPayload = role === 'seller'
           ? { seller_email: formData.email, seller_password: formData.password }
@@ -61,7 +61,7 @@ export default function Registerform({ isOpen, onClose }) {
 
       } else {
         if (role === 'seller') {
-          apiEndpoint = `${import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL}/api/seller-register`;
+          apiEndpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/seller-register`;
           
           const data = new FormData();
           data.append('seller_name', formData.storeName); 
@@ -81,7 +81,7 @@ export default function Registerform({ isOpen, onClose }) {
           };
 
         } else {
-          apiEndpoint = `${import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL}/api/buyer-register`;
+          apiEndpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/buyer-register`;
           
           const buyerPayload = {
             username: formData.username,
@@ -139,7 +139,7 @@ export default function Registerform({ isOpen, onClose }) {
       }
 
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred.');
     } finally {
       setLoading(false);
     }

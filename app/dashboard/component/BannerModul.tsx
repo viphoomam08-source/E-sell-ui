@@ -51,7 +51,7 @@ export default function BannerModul() {
 
       {/* Table Component */}
       <div>
-         <Bannertable searchTerm />
+         <Bannertable searchTerm={searchQuery} />
       </div>
     
       {/* Popup Modal Component */}

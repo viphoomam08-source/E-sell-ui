@@ -30,7 +30,7 @@ function BannerModal({ isOpen, onClose, onAdd }) {
         setIsSubmitting(true);
         setError('');
 
-        const baseUrl = import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || '';
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
         const formData = new FormData();
         formData.append('Name', name);
         formData.append('Image_Banner', image);

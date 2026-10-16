@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Image as ImageIcon, Eye, Trash2, Loader2, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 
-export default function Bannertable() {
+export default function Bannertable({ searchTerm }) {
     const [banners, setBanners] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -19,8 +19,7 @@ export default function Bannertable() {
 
     // URL API configuration
     const getApiBaseUrl = () => {
-        return (typeof window !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) || 
-               process.env.NEXT_PUBLIC_API_URL || 
+        return process.env.NEXT_PUBLIC_API_URL ||
                'http://127.0.0.1:8000';
     };
 
@@ -120,6 +119,9 @@ export default function Bannertable() {
 
     const baseUrl = getApiBaseUrl();
     const safeBanners = Array.isArray(banners) ? banners : [];
+    const filteredBanners = safeBanners.filter((banner) =>
+        (banner.Name || banner.title || '').toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     return (
         <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden transition-all duration-300 font-['Kantumruy_Pro']">
@@ -167,14 +169,14 @@ export default function Bannertable() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
-                                {safeBanners.length === 0 ? (
+                                {filteredBanners.length === 0 ? (
                                     <tr>
                                         <td colSpan="5" className="py-12 text-center text-slate-400 font-medium">
                                             រកមិនឃើញទិន្នន័យបដាទេ។
                                         </td>
                                     </tr>
                                 ) : (
-                                    safeBanners.map((banner) => {
+                                    filteredBanners.map((banner) => {
                                         const isExpanded = expandedRowId === banner.id;
                                         const bannerTitle = banner.Name || banner.title || 'គ្មានចំណងជើង';
                                         const bannerImgPath = banner.Image_Banner;

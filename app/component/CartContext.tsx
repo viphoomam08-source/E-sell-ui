@@ -2,10 +2,40 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-const CartContext = createContext();
+type CartItem = {
+  id: number | string;
+  name: string;
+  price: number;
+  quantity: number;
+  variant: string;
+};
 
-export function CartProvider({ children }) {
-  const [cart, setCart] = useState([]);
+type CartProduct = {
+  id: number | string;
+  name?: string;
+  product_name?: string;
+  price?: number | string;
+  product_price?: number | string;
+  quantity?: number;
+  variant?: string;
+  variant_id?: number | string | null;
+};
+
+type CartContextValue = {
+  cart: CartItem[];
+  addToCart: (product: CartProduct) => Promise<void>;
+  removeFromCart: (productId: CartItem['id'], variant?: string) => Promise<void>;
+  clearCart: () => void;
+  totalItems: number;
+  totalPrice: number;
+  fetchCartItems: () => Promise<void>;
+};
+
+const CartContext = createContext<CartContextValue | null>(null);
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+
+export function CartProvider({ children }: { children: React.ReactNode }) {
+  const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
 
   // មុខងារទាញយកទិន្នន័យពី Laravel API
@@ -14,7 +44,7 @@ export function CartProvider({ children }) {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
       if (!token) return;
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/api/cart/items`, {
+      const response = await fetch(`${API_BASE_URL}/api/cart/items`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -30,16 +60,37 @@ export function CartProvider({ children }) {
         return;
       }
 
-      const result = await response.json();
-      if (response.ok && (result.status || result.data)) {
-        const cartData = result.data || result;
-        const formattedCart = cartData.map(item => ({
-          id: item.product_id || item.id,
-          name: item.product?.product_name || item.name || 'Product',
-          price: item.product?.product_price || item.price || 0,
-          quantity: item.quantity,
-          variant: item.variant || 'Standard'
-        }));
+      const result: unknown = await response.json();
+      if (!result || typeof result !== 'object') return;
+
+      const payload = result as { status?: boolean; data?: unknown };
+      if (response.ok && (payload.status || payload.data)) {
+        const cartData = payload.data || result;
+        if (!Array.isArray(cartData)) return;
+
+        const formattedCart: CartItem[] = cartData.map((rawItem: unknown) => {
+          if (!rawItem || typeof rawItem !== 'object') {
+            throw new Error('Cart API returned an invalid item.');
+          }
+
+          const item = rawItem as {
+            id?: number | string;
+            product_id?: number | string;
+            name?: string;
+            price?: number | string;
+            quantity?: number | string;
+            variant?: string;
+            product?: { product_name?: string; product_price?: number | string };
+          };
+
+          return {
+            id: item.product_id || item.id || '',
+            name: item.product?.product_name || item.name || 'Product',
+            price: Number(item.product?.product_price ?? item.price ?? 0),
+            quantity: Number(item.quantity ?? 0),
+            variant: item.variant || 'Standard',
+          };
+        });
         setCart(formattedCart);
       }
     } catch (error) {
@@ -94,7 +145,7 @@ export function CartProvider({ children }) {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
       if (!token) return;
 
-      await fetch('http://127.0.0.1:8000/api/cart/add', {
+      await fetch(`${API_BASE_URL}/api/cart/add`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -119,7 +170,7 @@ export function CartProvider({ children }) {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
       if (!token) return;
 
-      await fetch(`http://127.0.0.1:8000/api/cart/remove`, {
+      await fetch(`${API_BASE_URL}/api/cart/remove`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -133,11 +184,13 @@ export function CartProvider({ children }) {
     }
   };
 
+  const clearCart = () => setCart([]);
+
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, totalItems, totalPrice, fetchCartItems }}>
+    <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart, totalItems, totalPrice, fetchCartItems }}>
       {children}
     </CartContext.Provider>
   );

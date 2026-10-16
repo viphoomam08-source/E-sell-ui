@@ -18,8 +18,6 @@ import Page from './product/[id]/page';
 
 export default function Home() {
   const [selectedSubId, setSelectedSubId] = useState(null);
-  const [isPopupOpen, setIsPopupOpen] = useState(true); // កំណត់ឱ្យវាលេចឡើងស្វ័យប្រវត្តិពេលចូលទំព័រ
-
   const handleOpenChat = () => {
     console.log("Chat action triggered every 2 seconds!");
   };
@@ -48,11 +46,8 @@ export default function Home() {
 
       <ProductCard selectedSubId={selectedSubId} />
       <DiscountDisplay/>
-      <Circlechat onClick={handleOpenChat} unreadCount={1}/>
-      <BannerPopup 
-        isOpen={isPopupOpen} 
-        onClose={() => setIsPopupOpen(false)} 
-      />     
+      <Circlechat unreadCount={1}/>
+      <BannerPopup />
       <Footer/>
     </div>
   );

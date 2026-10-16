@@ -61,7 +61,7 @@ export default function UpdateForm({ product, isOpen, onClose, onUpdateSuccess }
         const token = typeof window !== 'undefined' 
             ? (localStorage.getItem('access_token') || localStorage.getItem('token') || localStorage.getItem('jwt_token')) 
             : '';
-        const baseUrl = import.meta.env?.VITE_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL;
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
         // Use FormData to send both text fields and the image file
         const dataToSend = new FormData();
