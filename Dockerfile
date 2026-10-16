@@ -1,44 +1,23 @@
+FROM php:8.2-cli
 
-
-FROM php:8.2-fpm
-
-# Set working directory
-WORKDIR /var/www/html
-
-# Install dependencies
+# Install system dependencies and PostgreSQL driver
 RUN apt-get update && apt-get install -y \
-    build-essential \
-    libpng-dev \
-    libjpeg62-turbo-dev \
-    libfreetype6-dev \
-    locales \
-    zip \
-    jpegoptim optipng pngquant gifsicle \
-    vim \
-    unzip \
-    git \
-    curl \
-    libpq-dev \
-    libonig-dev \
-    libzip-dev
+    git zip unzip libpng-dev libonig-dev libxml2-dev libpq-dev \
+    && docker-php-ext-install pdo pdo_pgsql pgsql mbstring exif pcntl bcmath gd
 
-# Clear cache
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# Install PHP extensions (Pdo, PgSql, Mbstring, Zip, Exif, Pcntl)
-RUN docker-php-ext-install pdo pdo_mysql pdo_pgsql mbstring zip exif pcntl
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg
-RUN docker-php-ext-install gd
-
-# Get latest Composer
+# Copy Composer from official image
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Copy existing application directory contents
-COPY . /var/www/html
+WORKDIR /var/www/html
 
-# Copy existing application directory permissions
-COPY --chown=www-data:www-data . /var/www/html
+# Copy application code
+COPY . .
 
-# Expose port 9000 and start php-fpm server
-EXPOSE 9000
-CMD php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=$PORT
+# Install PHP dependencies
+RUN composer install --no-dev --optimize-autoloader
+
+# Expose web port
+EXPOSE 10000
+
+# Start Laravel built-in web server listening on Render's $PORT
+CMD php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=${PORT:-10000}
