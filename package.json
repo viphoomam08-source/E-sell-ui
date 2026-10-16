@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
   "name": "frontstore",
   "version": "0.1.0",
   "private": true,
@@ -31,4 +32,21 @@
     "tailwindcss": "^4",
     "typescript": "^5"
   }
+=======
+    "$schema": "https://www.schemastore.org/package.json",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "vite build",
+        "dev": "vite"
+    },
+    "devDependencies": {
+        "@tailwindcss/vite": "^4.0.0",
+        "axios": "^1.11.0",
+        "concurrently": "^9.0.1",
+        "laravel-vite-plugin": "^2.0.0",
+        "tailwindcss": "^4.0.0",
+        "vite": "^7.0.7"
+    }
+>>>>>>> 90f79de9ead977074bc7e9a87542e078d3489272
 }
