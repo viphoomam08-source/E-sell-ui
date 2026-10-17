@@ -11,9 +11,11 @@ const calculateDiscountPercent = (product) => {
     if (!product.product_price || !product.discount_price) return 0;
     return Math.round(((product.product_price - product.discount_price) / product.product_price) * 100);
 };
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://e-sale-4.onrender.com';
+
 
 const getImageUrl = (path, defaultUrl) => {
-    return path ? `${process.env.NEXT_PUBLIC_API_URL}/storage/${path}` : defaultUrl;
+    return path ? `${API_URL}/storage/${path}` : defaultUrl;
 };
 
 // ==========================================
@@ -95,7 +97,7 @@ export default function SpotlightDiscountLayout() {
     };
 
     useEffect(() => {
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/top-three-discounts`, {
+        fetch(`${API_URL}/api/top-three-discounts`, {
             headers: { 'Accept': 'application/json' }
         })
             .then((res) => res.json())
