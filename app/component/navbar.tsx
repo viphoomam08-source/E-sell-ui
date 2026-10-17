@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useCart } from './CartContext';
@@ -15,8 +15,7 @@ import {
   Store,
   Flame,
   User,
-  Layers,
-  History
+  Layers
 } from 'lucide-react';
 import OrderNotifications from './OrderNotifications';
 
@@ -27,6 +26,10 @@ export default function SecondaryNav() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isDockExpanded, setIsDockExpanded] = useState(false);
+  const [dockPosition, setDockPosition] = useState(null);
+  const [viewportWidth, setViewportWidth] = useState(0);
+  const dockDrag = useRef(null);
   
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -49,7 +52,106 @@ export default function SecondaryNav() {
       });
   }, []);
 
+  useEffect(() => {
+    const updateDockBounds = () => {
+      setViewportWidth(window.innerWidth);
+      setDockPosition((position) => {
+        const maxX = Math.max(12, window.innerWidth - 68);
+        const maxY = Math.max(12, window.innerHeight - 80);
+
+        return position
+          ? {
+              x: Math.min(Math.max(position.x, 12), maxX),
+              y: Math.min(Math.max(position.y, 12), maxY)
+            }
+          : {
+              x: 12,
+              y: Math.max(12, window.innerHeight - 72)
+            };
+      });
+    };
+
+    updateDockBounds();
+    window.addEventListener('resize', updateDockBounds);
+    return () => window.removeEventListener('resize', updateDockBounds);
+  }, []);
+
+  const handleDockPointerDown = (event) => {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const position = dockPosition || { x: bounds.left, y: bounds.top };
+
+    dockDrag.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      originX: position.x,
+      originY: position.y,
+      moved: false
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handleDockPointerMove = (event) => {
+    const drag = dockDrag.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+
+    const deltaX = event.clientX - drag.startX;
+    const deltaY = event.clientY - drag.startY;
+    if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) drag.moved = true;
+    if (!drag.moved) return;
+
+    setDockPosition({
+      x: Math.min(Math.max(drag.originX + deltaX, 12), window.innerWidth - 68),
+      y: Math.min(Math.max(drag.originY + deltaY, 12), window.innerHeight - 80)
+    });
+  };
+
+  const handleDockPointerUp = (event) => {
+    const drag = dockDrag.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+
+    dockDrag.current = null;
+    if (drag.moved) return;
+    if (isDockExpanded) {
+      setIsDockExpanded(false);
+      return;
+    }
+
+    const expandedWidth = Math.min(276, window.innerWidth - 100);
+    const x = dockPosition?.x ?? 12;
+    const y = dockPosition?.y ?? Math.max(12, window.innerHeight - 72);
+    const left = x > window.innerWidth / 2 ? x + 56 - expandedWidth : x;
+    const right = left + expandedWidth;
+    const chatLeft = window.innerWidth - 72;
+    const chatTop = window.innerHeight - 72;
+    const overlapsChat = right > chatLeft && left < window.innerWidth - 24
+      && y + 56 > chatTop && y < window.innerHeight - 24;
+
+    if (overlapsChat) {
+      setDockPosition((position) => position
+        ? { ...position, y: Math.max(12, chatTop - 80) }
+        : position);
+    }
+    setIsDockExpanded(true);
+  };
+
+  const handleDockKeyDown = (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      setIsDockExpanded((expanded) => !expanded);
+    }
+  };
+
   const isActive = (path) => pathname === path;
+  const dockOnRight = Boolean(dockPosition && dockPosition.x > viewportWidth / 2);
+  const dockStyle = dockPosition
+    ? {
+        left: dockOnRight ? 'auto' : `${dockPosition.x}px`,
+        right: dockOnRight ? `${Math.max(12, viewportWidth - dockPosition.x - 56)}px` : 'auto',
+        top: `${dockPosition.y}px`,
+        bottom: 'auto'
+      }
+    : undefined;
 
   return (
     <>
@@ -187,7 +289,7 @@ export default function SecondaryNav() {
           <Link href="/brands" className="px-3 py-2 rounded-xl hover:bg-white/10 transition-colors">Brands</Link>
           <Link href="/sellers" className="px-3 py-2 rounded-xl hover:bg-white/10 transition-colors">Sellers</Link>
           <Link href="/history" className="px-3 py-2 rounded-xl hover:bg-white/10 transition-colors">History</Link>
-          <Link href="/update" className="px-3 py-2 rounded-xl hover:bg-white/10 transition-colors">What's new?</Link>
+          <Link href="/update" className="px-3 py-2 rounded-xl hover:bg-white/10 transition-colors">What&apos;s new?</Link>
 
           <Link href="/todays-deal" className="px-3 py-2 rounded-xl hover:bg-white/10 transition-colors text-amber-300 font-semibold flex items-center gap-1">
             🔥 Todays Deal
@@ -289,95 +391,136 @@ export default function SecondaryNav() {
               <Link href="/brands" onClick={() => setIsMobileMenuOpen(false)} className="p-3 rounded-2xl bg-gray-50 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors">Brands</Link>
               <Link href="/sellers" onClick={() => setIsMobileMenuOpen(false)} className="p-3 rounded-2xl bg-gray-50 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors">Sellers</Link>
               <Link href="/history" onClick={() => setIsMobileMenuOpen(false)} className="p-3 rounded-2xl bg-gray-50 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors">History</Link>
-              <Link href="/update" onClick={() => setIsMobileMenuOpen(false)} className="p-3 rounded-2xl bg-gray-50 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors">What's new?</Link>
+              <Link href="/update" onClick={() => setIsMobileMenuOpen(false)} className="p-3 rounded-2xl bg-gray-50 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors">What&apos;s new?</Link>
               <Link href="/todays-deal" onClick={() => setIsMobileMenuOpen(false)} className="col-span-2 p-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-center shadow-sm">🔥 Todays Deal</Link>
             </div>
           </div>
         </div>
       )}
 
-      {/* ==================== MOBILE FLOATING PILL BAR (BLUE & WHITE STYLE) ==================== */}
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[9999] md:hidden w-[92%] max-w-[420px]">
-        {/* Main Blue Floating Pill Bar Container */}
-        <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-600 text-white shadow-2xl shadow-blue-900/30 rounded-full px-2 py-1.5 flex items-center justify-between border border-white/20 backdrop-blur-lg">
-          
-          {/* 1. Home Link */}
-          <Link 
-            href="/"
-            className={`flex items-center justify-center py-2 px-3.5 rounded-full transition-all duration-300 ${
-              isActive('/') 
-                ? 'bg-white/25 text-white scale-105 shadow-sm border border-white/20' 
-                : 'text-blue-100 hover:text-white'
-            }`}
-          >
-            <Home className="w-5 h-5 stroke-[2.2]" />
-          </Link>
+      {/* ==================== MOBILE FLOATING NAV ==================== */}
+      {!isMobileMenuOpen && (
+        <div
+          className={`fixed bottom-4 left-4 z-[9999] md:hidden transition-[width] duration-300 ease-out ${
+            isDockExpanded ? 'w-[min(276px,calc(100vw-100px))]' : 'w-14'
+          }`}
+          style={dockStyle}
+        >
+          <div className={`flex items-center gap-1.5 rounded-full border border-white/20 bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-600 p-1.5 text-white shadow-2xl shadow-blue-900/30 backdrop-blur-lg ${
+            dockOnRight ? 'flex-row-reverse' : ''
+          }`}>
+            <nav
+              aria-label="Quick navigation"
+              aria-hidden={!isDockExpanded}
+              className={`flex min-w-0 items-center justify-around gap-0 overflow-hidden transition-[width,opacity,transform] duration-300 ease-out ${
+                isDockExpanded
+                  ? 'w-[min(212px,calc(100vw-160px))] translate-x-0 opacity-100'
+                  : `w-0 opacity-0 pointer-events-none ${dockOnRight ? 'translate-x-2' : '-translate-x-2'}`
+              }`}
+            >
+              <Link
+                href="/"
+                tabIndex={isDockExpanded ? 0 : -1}
+                aria-label="Home"
+                title="Home"
+                onClick={() => setIsDockExpanded(false)}
+                className={`relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors max-[359px]:h-[26px] max-[359px]:w-[26px] ${
+                  isActive('/') ? 'bg-white/25 text-white' : 'text-blue-100 hover:bg-white/15 hover:text-white'
+                }`}
+              >
+                <Home className="h-5 w-5" aria-hidden="true" />
+              </Link>
 
-          {/* 2. All Products */}
-          <Link 
-            href="/allProduct"
-            className={`flex items-center justify-center py-2 px-3.5 rounded-full transition-all duration-300 ${
-              isActive('/allProduct') 
-                ? 'bg-white/25 text-white scale-105 shadow-sm border border-white/20' 
-                : 'text-blue-100 hover:text-white'
-            }`}
-          >
-            <Store className="w-5 h-5 stroke-[2.2]" />
-          </Link>
+              <Link
+                href="/allProduct"
+                tabIndex={isDockExpanded ? 0 : -1}
+                aria-label="All products"
+                title="All products"
+                onClick={() => setIsDockExpanded(false)}
+                className={`relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors max-[359px]:h-[26px] max-[359px]:w-[26px] ${
+                  isActive('/allProduct') ? 'bg-white/25 text-white' : 'text-blue-100 hover:bg-white/15 hover:text-white'
+                }`}
+              >
+                <Store className="h-5 w-5" aria-hidden="true" />
+              </Link>
 
-          {/* 3. Todays Deal */}
-          <Link 
-            href="/todays-deal"
-            className={`flex items-center justify-center py-2 px-3.5 rounded-full transition-all duration-300 ${
-              isActive('/todays-deal') 
-                ? 'bg-amber-400 text-blue-950 font-bold scale-105 shadow-sm' 
-                : 'text-amber-300 hover:text-amber-200'
-            }`}
-          >
-            <Flame className="w-5 h-5 stroke-[2.2]" />
-          </Link>
+              <Link
+                href="/todays-deal"
+                tabIndex={isDockExpanded ? 0 : -1}
+                aria-label="Today's deals"
+                title="Today's deals"
+                onClick={() => setIsDockExpanded(false)}
+                className={`relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors max-[359px]:h-[26px] max-[359px]:w-[26px] ${
+                  isActive('/todays-deal') ? 'bg-amber-400 text-blue-950' : 'text-amber-300 hover:bg-white/15 hover:text-amber-200'
+                }`}
+              >
+                <Flame className="h-5 w-5" aria-hidden="true" />
+              </Link>
 
-          {/* 4. Cart Link */}
-          <Link 
-            href="/cart"
-            className={`relative flex items-center justify-center py-2 px-3.5 rounded-full transition-all duration-300 ${
-              isActive('/cart') 
-                ? 'bg-white/25 text-white scale-105 shadow-sm border border-white/20' 
-                : 'text-blue-100 hover:text-white'
-            }`}
-          >
-            <ShoppingCart className="w-5 h-5 stroke-[2.2]" />
-            {totalItems > 0 && (
-              <span className="absolute top-1 right-1 bg-amber-400 text-blue-950 text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow-xs">
-                {totalItems}
-              </span>
-            )}
-          </Link>
+              <Link
+                href="/cart"
+                tabIndex={isDockExpanded ? 0 : -1}
+                aria-label={`Shopping cart${totalItems > 0 ? `, ${totalItems} items` : ''}`}
+                title="Shopping cart"
+                onClick={() => setIsDockExpanded(false)}
+                className={`relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors max-[359px]:h-[26px] max-[359px]:w-[26px] ${
+                  isActive('/cart') ? 'bg-white/25 text-white' : 'text-blue-100 hover:bg-white/15 hover:text-white'
+                }`}
+              >
+                <ShoppingCart className="h-5 w-5" aria-hidden="true" />
+                {totalItems > 0 && (
+                  <span className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-400 px-1 text-[10px] font-black text-blue-950 shadow-sm">
+                    {totalItems}
+                  </span>
+                )}
+              </Link>
 
-          {/* 5. Mobile Drawer / Category Toggle */}
-          <button 
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className={`flex items-center justify-center py-2 px-3.5 rounded-full transition-all duration-300 ${
-              isMobileMenuOpen 
-                ? 'bg-white/25 text-white scale-105 shadow-sm border border-white/20' 
-                : 'text-blue-100 hover:text-white'
-            }`}
-          >
-            <Layers className="w-5 h-5 stroke-[2.2]" />
-          </button>
+              <button
+                type="button"
+                tabIndex={isDockExpanded ? 0 : -1}
+                aria-label="More navigation"
+                title="More navigation"
+                onClick={() => {
+                  setIsDockExpanded(false);
+                  setIsMobileMenuOpen(true);
+                }}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-blue-100 transition-colors hover:bg-white/15 hover:text-white max-[359px]:h-[26px] max-[359px]:w-[26px]"
+              >
+                <Layers className="h-5 w-5" aria-hidden="true" />
+              </button>
 
-          {/* 6. Profile / History */}
-          <Link 
-            href="/history"
-            className="flex items-center justify-center p-0.5 rounded-full transition-all"
-          >
-            <div className="w-7 h-7 rounded-full overflow-hidden bg-white text-blue-700 flex items-center justify-center font-bold shadow-sm border-2 border-white">
-              <User className="w-4 h-4 text-blue-700" />
-            </div>
-          </Link>
+              <Link
+                href="/history"
+                tabIndex={isDockExpanded ? 0 : -1}
+                aria-label="Profile and order history"
+                title="Profile and order history"
+                onClick={() => setIsDockExpanded(false)}
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors max-[359px]:h-[26px] max-[359px]:w-[26px] ${
+                  isActive('/history') ? 'bg-white/25 text-white' : 'text-blue-100 hover:bg-white/15 hover:text-white'
+                }`}
+              >
+                <User className="h-5 w-5" aria-hidden="true" />
+              </Link>
+            </nav>
 
+            <button
+              type="button"
+              aria-label={isDockExpanded ? 'Collapse navigation' : 'Expand navigation'}
+              aria-expanded={isDockExpanded}
+              onPointerDown={handleDockPointerDown}
+              onPointerMove={handleDockPointerMove}
+              onPointerUp={handleDockPointerUp}
+              onPointerCancel={() => {
+                dockDrag.current = null;
+              }}
+              onKeyDown={handleDockKeyDown}
+              className="flex h-10 w-10 shrink-0 touch-none items-center justify-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 active:cursor-grabbing"
+            >
+              {isDockExpanded ? <X className="h-5 w-5" aria-hidden="true" /> : <Layers className="h-5 w-5" aria-hidden="true" />}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </>
   );
 }
