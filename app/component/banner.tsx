@@ -3,25 +3,23 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://e-sale-4.onrender.com';
 
 export default function MultiBannerLayout() {
   const [heroBanners, setHeroBanners] = useState([]);
   const [subBanners, setSubBanners] = useState([]);
   const [currentHero, setCurrentHero] = useState(0);
 
+  // 1. Fetch Banners from /api/banner-all
   useEffect(() => {
-    console.log("Fetching banners from:", `${API_URL}/api/banner-all`);
-    
     fetch(`${API_URL}/api/banner-all`, {
       headers: { 'Accept': 'application/json' }
     })
       .then((res) => res.json())
       .then((data) => {
-        console.log("API Banner Response:", data);
-        
-        // Handle different data array formats returned by Laravel controllers
-        const bannerList = data.Banner || data.data || data.banners || (Array.isArray(data) ? data : []);
+        console.log("Live Banners Response:", data);
+        // The Laravel controller returns "Banner"
+        const bannerList = data.Banner || data.data || (Array.isArray(data) ? data : []);
         
         const formatted = bannerList.map((item) => ({
           id: item.id,
@@ -38,7 +36,7 @@ export default function MultiBannerLayout() {
       .catch((err) => console.error('Error fetching banners:', err));
   }, []);
 
-  // Auto Slide សម្រាប់ Hero Banner ធំខាងលើ
+  // Auto Slide for Hero Banner
   useEffect(() => {
     if (heroBanners.length === 0) return;
     const timer = setInterval(() => {
@@ -47,7 +45,6 @@ export default function MultiBannerLayout() {
     return () => clearInterval(timer);
   }, [heroBanners.length]);
 
-  // If no banners are loaded from database yet, display a placeholder or empty container gracefully
   if (heroBanners.length === 0) {
     return (
       <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 my-3 font-['Kantumruy_Pro']">
@@ -61,7 +58,7 @@ export default function MultiBannerLayout() {
   return (
     <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 my-3 font-['Kantumruy_Pro'] space-y-4">
       
-      {/* ================= 1. HERO BANNER ធំនៅខាងលើ ================= */}
+      {/* ================= 1. HERO BANNER ================= */}
       <div className="relative w-full h-[220px] sm:h-[320px] md:h-[400px] bg-slate-900 overflow-hidden border border-slate-200">
         <motion.div 
           className="flex w-full h-full"
