@@ -95,12 +95,18 @@ export default function SpotlightDiscountLayout() {
     };
 
     useEffect(() => {
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/top-three-discounts`)
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/top-three-discounts`, {
+            headers: { 'Accept': 'application/json' }
+        })
             .then((res) => res.json())
             .then((response) => {
                 console.log("API Response Data:", response);
-                if (response.status === 'success' && Array.isArray(response.data)) {
-                    setDiscountProducts(response.data);
+                
+                // Flexible parsing to handle various Laravel response structures
+                const productList = response.data || response.products || (Array.isArray(response) ? response : []);
+                
+                if (Array.isArray(productList)) {
+                    setDiscountProducts(productList);
                 }
                 setLoading(false);
             })
@@ -110,7 +116,7 @@ export default function SpotlightDiscountLayout() {
             });
     }, []);
 
-    // บังខំឱ្យរំកិលដោយខ្លួនឯងរៀងរាល់ ៤ វិនាទី (Force Auto-slide without pause lock)
+    // Force Auto-slide without pause lock
     useEffect(() => {
         if (discountProducts.length <= 1) return;
 
@@ -118,7 +124,6 @@ export default function SpotlightDiscountLayout() {
             setIsExpired(false);
             setCurrentIndex((prevIndex) => {
                 const nextIndex = prevIndex === discountProducts.length - 1 ? 0 : prevIndex + 1;
-                console.log("Auto sliding to index:", nextIndex);
                 return nextIndex;
             });
         }, 4000);
@@ -135,7 +140,15 @@ export default function SpotlightDiscountLayout() {
         );
     }
 
-    if (discountProducts.length === 0) return null;
+    if (discountProducts.length === 0) {
+        return (
+            <div className="w-full max-w-7xl mx-auto px-4 py-6 font-['Kantumruy_Pro']">
+                <div className="w-full p-6 bg-slate-50 border border-dashed border-slate-200 rounded-2xl text-center text-xs text-slate-400">
+                    📦 មិនមានផលិតផលបញ្ចុះតម្លៃធំសម្រាប់បង្ហាញនៅលើប្រព័ន្ធឡើយ។
+                </div>
+            </div>
+        );
+    }
 
     const handleNext = () => {
         setIsExpired(false);
