@@ -3,33 +3,44 @@
 import React, { useState, useEffect } from 'react';
 import { Megaphone } from 'lucide-react';
 
+interface AnnouncementItem {
+  id?: number;
+  message?: string;
+  big_tile?: string;
+  [key: string]: unknown;
+}
+
 export default function ShortAnounce() {
-  const [announcements, setAnnouncements] = useState([
+  const [announcements, setAnnouncements] = useState<string[]>([
     "🎉 កំពុងទាញយកសេចក្តីជូនដំណឹង..."
   ]);
 
   useEffect(() => {
     const fetchAnnouncements = async () => {
       try {
-        const API_URL = (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/+$/, '');
+        const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000').replace(/\/+$/, '');
         
         const response = await fetch(`${API_URL}/api/quick-show`, {
-          method: 'POST', // ប្រើ POST តាម Route របស់អ្នក
+          method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json'
           },
-          // body: JSON.stringify({ }) // បើ API ត្រូវការส่ง parameter អ្វីបន្ថែម អាចដាក់ទីនេះ
         });
 
         const result = await response.json();
 
-        // ត្រួតពិនិត្យមើលโครงสร้างទិន្នន័យដែល trả មកពី Laravel (ឧទាហរណ៍: result.data ឬ result ជា Array)
-        const dataList = Array.isArray(result) ? result : result.data || [];
+        const dataList: AnnouncementItem[] = Array.isArray(result) 
+          ? result 
+          : Array.isArray(result?.data) 
+            ? result.data 
+            : [];
 
         if (dataList.length > 0) {
-          // สมมติว่าใน database column របស់អ្នកឈ្មោះ message
-          const texts = dataList.map((item) => item.message || item.big_tile || item);
+          const texts = dataList.map((item) => {
+            if (typeof item === 'string') return item;
+            return item.message || item.big_tile || String(item);
+          });
           setAnnouncements(texts);
         }
       } catch (error) {
