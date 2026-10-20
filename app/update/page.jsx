@@ -1,41 +1,73 @@
 "use client";
 
-import React, { useState } from 'react';
-import { CalendarDays, Heart, Megaphone, ShieldCheck, Sparkles, Zap, MessageCircle, X, Send } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { CalendarDays, Heart, Megaphone, ShieldCheck, Sparkles, Zap, MessageCircle, X, Send, Lock, LogIn } from 'lucide-react';
 
 export default function WhatsNewPage() {
-  const [posts, setPosts] = useState([
-    {
-      id: 1,
-      title: "🚀 បើកដំណើរការមុខងារស្វែងរកលឿនជាងមុន (Fast Search & Redis Cache)",
-      tag: "New Feature",
-      date: "១៧ តុលា ២០២៦",
-      content: "ឥឡូវនេះប្រព័ន្ធ E-Commerce របស់យើងបានដំឡើង Redis Cache ជួយឱ្យការស្វែងរកទំនិញកាន់តែលឿនជាងមុនដល់ទៅ ១០ដង និងកាត់បន្ថយការផ្ទុកលើ Database យ៉ាងខ្លាំង។",
-      image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000&auto=format&fit=crop", 
-      likes: 24,
-      isLiked: false,
-      comments: [
-        { id: 1, user: "Dara Dev", text: "លឿនពិតមែន កោតសរសើរ!" },
-        { id: 2, user: "Srey Leak", text: "អស្ចារ្យណាស់ ងាយស្រួលស្វែងរកទំនិញច្រើនណាស់។" }
-      ]
-    },
-    {
-      id: 2,
-      title: "🛡️ ប្រព័ន្ធសម្អាត Cache ស្វ័យប្រវត្តិពេល Update/Delete",
-      tag: "System Update",
-      date: "១៥ តុលា ២០២៦",
-      content: "រាល់ពេលដែល Admin ឬ Seller ធ្វើការកែប្រែ (Update) ឬលុប (Delete) ផលិតផល ប្រព័ន្ធនឹងធ្វើការ Cache Invalidation ដោយស្វ័យប្រវត្តិ ដើម្បីធានាថាទិន្នន័យបង្ហាញចេញមកត្រឹមត្រូវ 100%。",
-      image: "", 
-      likes: 12,
-      isLiked: true,
-      comments: [
-        { id: 1, user: "Visal Admin", text: "លែងព្រួយបារម្ភរឿងទិន្នន័យមិនស៊ីគ្នាទៀតហើយ។" }
-      ]
-    }
-  ]);
-
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(true);
+  const [unauthMessage, setUnauthMessage] = useState("");
   const [activeCommentPostId, setActiveCommentPostId] = useState(null);
   const [newCommentText, setNewCommentText] = useState("");
+
+  const API = process.env.NEXT_PUBLIC_API_URL;
+
+  useEffect(() => {
+    const fetchNews = async () => {
+      const token = localStorage.getItem('access_token') || localStorage.getItem('token');
+
+      if (!token) {
+        setIsLoggedIn(false);
+        setUnauthMessage("please login to see news update!");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API}/api/show-news`, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const result = await response.json();
+
+        if (response.status === 401 || result.status === false) {
+          setIsLoggedIn(false);
+          setUnauthMessage(result.message || "please login to see news update!");
+          return;
+        }
+
+        if (response.ok && (result.status === true || result.messsage === "true")) {
+          setIsLoggedIn(true);
+          const rawData = Array.isArray(result.data) ? result.data : [];
+
+          const formattedPosts = rawData.map((item) => ({
+            id: item.id,
+            title: item.big_tile,
+            tag: item.sub_title || 'System Update',
+            date: item.created_at ? new Date(item.created_at).toLocaleDateString('km-KH') : '',
+            content: item.decribe,
+            image: item.image || '',
+            video: item.video || null,
+            likes: item.likes || 0,
+            isLiked: false,
+            comments: item.comments || []
+          }));
+
+          setPosts(formattedPosts);
+        }
+      } catch (error) {
+        console.error('Failed to fetch news updates:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNews();
+  }, [API]);
 
   const handleLike = (id) => {
     setPosts((currentPosts) => currentPosts.map((post) => {
@@ -57,7 +89,7 @@ export default function WhatsNewPage() {
       return {
         ...post,
         comments: [
-          ...post.comments,
+          ...(post.comments || []),
           { id: Date.now(), user: "អ្នកប្រើប្រាស់", text: newCommentText }
         ]
       };
@@ -66,6 +98,30 @@ export default function WhatsNewPage() {
   };
 
   const activePost = posts.find(p => p.id === activeCommentPostId);
+
+  // 🔒 ករណីមិនទាន់ Login (Not Authenticated)
+  if (!isLoggedIn && !loading) {
+    return (
+      <main className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-12">
+        <div className="max-w-md w-full bg-white rounded-3xl p-8 border border-slate-200 shadow-xl text-center">
+          <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-sm">
+            <Lock className="w-8 h-8" />
+          </div>
+          <h2 className="text-xl font-bold text-slate-800 mb-2">តម្រូវឱ្យចូលគណនី</h2>
+          <p className="text-xs text-slate-500 leading-relaxed mb-6">
+            {unauthMessage || "សូមចូលគណនីជាមុនសិន ដើម្បីមើល និងទាក់ទងជាមួយព័ត៌មានអាប់ដេត!"}
+          </p>
+          <a
+            href="/login"
+            className="inline-flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl bg-blue-600 text-white font-semibold text-xs shadow-md shadow-blue-600/20 hover:bg-blue-700 transition-colors"
+          >
+            <LogIn className="w-4 h-4" />
+            <span>ចូលទៅកាន់ទំព័រ Login</span>
+          </a>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8 relative">
@@ -112,97 +168,112 @@ export default function WhatsNewPage() {
             </span>
           </div>
 
-          <div className="space-y-4">
-            {posts.map((post, index) => {
-              const isFeature = post.tag === 'New Feature';
-              const UpdateIcon = isFeature ? Zap : ShieldCheck;
+          {loading ? (
+            <div className="text-center py-20 text-slate-400 text-sm">កំពុងផ្ទុកទិន្នន័យ... (Loading updates...)</div>
+          ) : posts.length === 0 ? (
+            <div className="text-center py-20 text-slate-400 text-sm">មិនទាន់មានការអាប់ដេតនៅឡើយទេ</div>
+          ) : (
+            <div className="space-y-4">
+              {posts.map((post, index) => {
+                const isFeature = post.tag === 'New Feature';
+                const UpdateIcon = isFeature ? Zap : ShieldCheck;
 
-              return (
-                <article
-                  key={post.id}
-                  className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-lg hover:shadow-slate-900/5 sm:p-6"
-                >
-                  <div className="flex gap-4 sm:gap-5">
-                    <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl sm:h-14 sm:w-14 ${
-                      isFeature ? 'bg-blue-50 text-blue-600' : 'bg-indigo-50 text-indigo-600'
-                    }`}>
-                      <UpdateIcon className="h-6 w-6 sm:h-7 sm:w-7" aria-hidden="true" />
-                    </div>
+                return (
+                  <article
+                    key={post.id}
+                    className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-lg hover:shadow-slate-900/5 sm:p-6"
+                  >
+                    <div className="flex gap-4 sm:gap-5">
+                      <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl sm:h-14 sm:w-14 ${
+                        isFeature ? 'bg-blue-50 text-blue-600' : 'bg-indigo-50 text-indigo-600'
+                      }`}>
+                        <UpdateIcon className="h-6 w-6 sm:h-7 sm:w-7" aria-hidden="true" />
+                      </div>
 
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${
-                          isFeature ? 'bg-blue-50 text-blue-700' : 'bg-indigo-50 text-indigo-700'
-                        }`}>
-                          {post.tag}
-                        </span>
-                        {index === 0 && (
-                          <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
-                            Latest
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                            isFeature ? 'bg-blue-50 text-blue-700' : 'bg-indigo-50 text-indigo-700'
+                          }`}>
+                            {post.tag}
                           </span>
+                          {index === 0 && (
+                            <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
+                              Latest
+                            </span>
+                          )}
+                          {post.date && (
+                            <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
+                              <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
+                              {post.date}
+                            </span>
+                          )}
+                        </div>
+
+                        <h3 className="mt-3 text-base font-bold leading-7 text-slate-800 transition-colors group-hover:text-blue-700 sm:text-lg">
+                          {post.title}
+                        </h3>
+                        
+                        <p className="mt-2 text-sm leading-7 text-slate-600">
+                          {post.content}
+                        </p>
+
+                        {/* 🖼️ រូបភាពប្រកាស */}
+                        {post.image && (
+                          <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+                            <img 
+                              src={post.image} 
+                              alt={post.title} 
+                              className="h-auto w-full max-h-80 object-cover transition-transform duration-300 group-hover:scale-[1.01]"
+                            />
+                          </div>
                         )}
-                        <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
-                          <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
-                          {post.date}
-                        </span>
-                      </div>
 
-                      <h3 className="mt-3 text-base font-bold leading-7 text-slate-800 transition-colors group-hover:text-blue-700 sm:text-lg">
-                        {post.title}
-                      </h3>
-                      
-                      <p className="mt-2 text-sm leading-7 text-slate-600">
-                        {post.content}
-                      </p>
+                        {/* 🎬 វីដេអូប្រកាស */}
+                        {post.video && (
+                          <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-black">
+                            <video src={post.video} controls className="h-auto w-full max-h-80 object-contain" />
+                          </div>
+                        )}
 
-                      {/* 🖼️ រូបភាពប្រកាស (បង្ហាញស្វ័យប្រវត្តាបើมี link) */}
-                      {post.image && (
-                        <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
-                          <img 
-                            src={post.image} 
-                            alt={post.title} 
-                            className="h-auto w-full max-h-80 object-cover transition-transform duration-300 group-hover:scale-[1.01]"
-                          />
+                        <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() => handleLike(post.id)}
+                              className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition-colors ${
+                                post.isLiked
+                                  ? 'border-rose-100 bg-rose-50 text-rose-600 hover:bg-rose-100'
+                                  : 'border-slate-200 bg-white text-slate-600 hover:border-rose-100 hover:bg-rose-50 hover:text-rose-600'
+                              }`}
+                            >
+                              <Heart className={`h-4 w-4 ${post.isLiked ? 'fill-current' : ''}`} aria-hidden="true" />
+                              {post.likes} ចូលចិត្ត
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setActiveCommentPostId(post.id)}
+                              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 hover:text-blue-600"
+                            >
+                              <MessageCircle className="h-4 w-4" />
+                              មតិយោបល់ ({post.comments?.length || 0})
+                            </button>
+                          </div>
+
+                          <span className="text-xs font-medium text-slate-400">E-Sell • Official update</span>
                         </div>
-                      )}
-
-                      <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
-                        <div className="flex items-center gap-3">
-                          <button
-                            type="button"
-                            onClick={() => handleLike(post.id)}
-                            className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition-colors ${
-                              post.isLiked
-                                ? 'border-rose-100 bg-rose-50 text-rose-600 hover:bg-rose-100'
-                                : 'border-slate-200 bg-white text-slate-600 hover:border-rose-100 hover:bg-rose-50 hover:text-rose-600'
-                            }`}
-                          >
-                            <Heart className={`h-4 w-4 ${post.isLiked ? 'fill-current' : ''}`} aria-hidden="true" />
-                            {post.likes} ចូលចិត្ត
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => setActiveCommentPostId(post.id)}
-                            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 hover:text-blue-600"
-                          >
-                            <MessageCircle className="h-4 w-4" />
-                            មតិយោបល់ ({post.comments.length})
-                          </button>
-                        </div>
-
-                        <span className="text-xs font-medium text-slate-400">E-Sell • Official update</span>
                       </div>
                     </div>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
         </section>
       </div>
 
-      {/* 📱 SMOOTH SLIDE-OVER COMMENT PANEL (លោតពីស្តាំមកឆ្វេងយ៉ាងរលូន) */}
+      {/* 📱 SLIDE-OVER COMMENT PANEL */}
       <div className={`fixed inset-0 z-50 overflow-hidden transition-all duration-300 ${activeCommentPostId ? 'visible opacity-100' : 'invisible opacity-0'}`}>
         <div 
           className={`absolute inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity duration-300 ${activeCommentPostId ? 'opacity-100' : 'opacity-0'}`} 
@@ -215,7 +286,7 @@ export default function WhatsNewPage() {
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
               <div className="flex items-center gap-2">
                 <MessageCircle className="h-5 w-5 text-blue-600" />
-                <h3 className="font-bold text-slate-800 text-base">មតិយោបល់ ({activePost?.comments.length || 0})</h3>
+                <h3 className="font-bold text-slate-800 text-base">មតិយោបល់ ({activePost?.comments?.length || 0})</h3>
               </div>
               <button 
                 onClick={() => setActiveCommentPostId(null)}
@@ -226,13 +297,13 @@ export default function WhatsNewPage() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              {activePost?.comments.length === 0 ? (
+              {(!activePost?.comments || activePost.comments.length === 0) ? (
                 <p className="text-center text-slate-400 text-sm py-10">មិនទាន់មានមតិយោបល់នៅឡើយទេ...</p>
               ) : (
-                activePost?.comments.map((comment) => (
+                activePost.comments.map((comment) => (
                   <div key={comment.id} className="flex gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
                     <div className="h-8 w-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
-                      {comment.user.charAt(0)}
+                      {comment.user ? comment.user.charAt(0) : 'U'}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">

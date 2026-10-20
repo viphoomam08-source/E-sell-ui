@@ -42,6 +42,7 @@ export default function SecondaryNav() {
         const catList = data.list || data.category || data.data || [];
         if (catList.length > 0) {
           setCategories(catList);
+        
           setActiveCategory(catList[0]);
         }
         setLoading(false);
