@@ -10,6 +10,7 @@ import Category from "./component/Category";
 import DiscountDisplay from "./component/discountDisplay";
 import Footer from './component/Footer';
 import Dicount from './component/dicount';
+import ShortAnounce from './component/shortAnounce'
 
 import BannerPopup from "./component/bannerPopup";
 import VideoReview from "./component/videoReview";
@@ -33,6 +34,7 @@ export default function Home() {
   return (
     <div className="w-full">
       <Search />
+<ShortAnounce />
       <Banner />
       <VideoReview/>
       <Dicount/>

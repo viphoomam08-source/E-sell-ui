@@ -45,7 +45,7 @@ export default function BannerModul() {
           onClick={() => setIsModalOpen(true)}
           className="flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-xs transition-all cursor-pointer"
         >
-          <Plus className="w-4 h-4" /> បន្ថែមបដាថ្មី
+          <Plus className="w-4 h-4" /> បន្ថែម bannerថ្មី
         </button>
       </div>
 

@@ -112,7 +112,7 @@ export default function WhatsNewPage() {
             {unauthMessage || "សូមចូលគណនីជាមុនសិន ដើម្បីមើល និងទាក់ទងជាមួយព័ត៌មានអាប់ដេត!"}
           </p>
           <a
-            href="/login"
+            href="/"
             className="inline-flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl bg-blue-600 text-white font-semibold text-xs shadow-md shadow-blue-600/20 hover:bg-blue-700 transition-colors"
           >
             <LogIn className="w-4 h-4" />

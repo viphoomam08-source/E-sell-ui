@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Registerform from './registerform'; 
-
+import eLogo from '../image/e.png'
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function Search() {
@@ -113,10 +113,14 @@ export default function Search() {
       <div className="flex flex-col md:flex-row items-center justify-between gap-3 md:gap-4">
         
         <div className="w-full md:w-auto flex items-center justify-between">
-          <Link href="/" className="font-bold text-lg sm:text-xl text-slate-800">
-            MyStore
-          </Link>
-
+          <Link href="/" className="font-bold text-lg sm:text-xl flex items-center gap-2">
+    <span></span>
+<img src={eLogo.src} alt="Logo" className="w-20 h-20 object-contain" />
+<h1>
+  <span className="text-blue-600 font-bold">E</span>
+  -
+  <span className="text-yellow-500 font-bold">Sell</span>
+</h1></Link>
           <div className="flex items-center space-x-2 md:hidden">
             <div className="flex items-center justify-center w-9 h-9 rounded-full bg-slate-100 text-slate-600 font-medium border border-slate-200 text-sm">
               🛒

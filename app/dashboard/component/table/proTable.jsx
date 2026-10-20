@@ -1,74 +1,120 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
-import { Package, Eye, Edit3, Trash2, Loader2, ChevronDown, Plus, Layers, Video } from 'lucide-react';
+import { Package, Eye, Edit3, Trash2, Loader2, ChevronDown, Plus, Layers, ChevronLeft, ChevronRight } from 'lucide-react';
 import AddProductModal from '../modal/AddProductModal';
-import UpdateForm from '../modal/updateForm'; // ផ្ទៀងផ្ទាត់ថាតើទីតាំង ፋይል នេះត្រឹមត្រូវឬនៅ
+import UpdateForm from '../modal/updateForm';
+
 export default function ProTable({ searchTerm }) {
+    // ===========================
+    // 1. STATE MANAGEMENT
+    // ===========================
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [isOpen, setIsOpen] = useState(true);
+    
+    // Expansion & Modal States
     const [expandedRowId, setExpandedRowId] = useState(null);
     const [collapsedVariants, setCollapsedVariants] = useState({}); 
     const [selectUpdate, setSelectUpdate] = useState(null);
-    
     const [selectedProductId, setSelectedProductId] = useState(null);
-    
+
+    // Pagination States
+    const [currentPage, setCurrentPage] = useState(1);
+    const [lastPage, setLastPage] = useState(1);
+    const [totalProducts, setTotalProducts] = useState(0);
+
+    // Authentication Token
     const token = typeof window !== 'undefined' 
         ? (localStorage.getItem('access_token') || localStorage.getItem('token') || localStorage.getItem('jwt_token')) 
         : '';
 
-    const fetchProducts = async () => {
-        setLoading(true);
+    // ===========================
+    // 2. API FETCHING LOGIC
+    // ===========================
+    const fetchProducts = async (isBackground = false) => {
+        if (!isBackground) setLoading(true);
         setError('');
         const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
         try {
-            const endpoint = searchTerm 
-                ? `${baseUrl}/api/productSell-search?keyword=${searchTerm}`
-                : `${baseUrl}/api/productSell-list`;
-
-            const response = await fetch(endpoint, {    
-                method: 'GET',
+            let endpoint;
+            let options = {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
                 }
-            });
+            };
+
+            // 🔍 Check if searching (POST API) or listing (GET API)
+            if (searchTerm && searchTerm.trim() !== '') {
+                endpoint = `${baseUrl}/api/search-product?page=${currentPage}`;
+                options.method = 'POST';
+                options.body = JSON.stringify({ keyword: searchTerm });
+            } else {
+                endpoint = `${baseUrl}/api/productSell-list?page=${currentPage}`;
+                options.method = 'GET';
+            }
+
+            const response = await fetch(endpoint, options);
             
             if (!response.ok) {
-                if (response.status === 401) {
-                    throw new Error('ការផ្ទៀងផ្ទាត់បរាជ័យ (Unauthorized)៖ សូម Login ម្ដងទៀត។');
-                }
+                if (response.status === 401) throw new Error('ការផ្ទៀងផ្ទាត់បរាជ័យ (Unauthorized)៖ សូម Login ម្ដងទៀត។');
                 throw new Error('មិនអាចទាញយកទិន្នន័យបានទេ។');
             }
 
             const data = await response.json();
-            setProducts(data.product || data.data || data.products || (Array.isArray(data) ? data : []));
+            
+            // 🛡️ Safe array extraction & Laravel Pagination Metadata mapping
+            let extracted = [];
+            if (data?.data?.data && Array.isArray(data.data.data)) {
+                extracted = data.data.data;
+                setCurrentPage(data.data.current_page || 1);
+                setLastPage(data.data.last_page || 1);
+                setTotalProducts(data.data.total || 0);
+            } else if (data?.data && Array.isArray(data.data)) {
+                extracted = data.data;
+                setTotalProducts(data.total || data.data.length);
+            } else if (data?.product && Array.isArray(data.product)) {
+                extracted = data.product;
+                setTotalProducts(data.total || data.product.length);
+            } else if (Array.isArray(data)) {
+                extracted = data;
+                setTotalProducts(data.length);
+            }
+
+            setProducts(extracted);
         } catch (err) {
-            setError(err.message || 'មិនអាចទាញយកទិន្នន័យផលិតផលបានទេ។');
+            if (!isBackground) {
+                setError(err.message || 'មិនអាចទាញយកទិន្នន័យផលិតផលបានទេ។');
+            }
         } finally {
-            setLoading(false);
+            if (!isBackground) setLoading(false);
         }
     };
 
+    // ===========================
+    // 3. EFFECTS & HANDLERS
+    // ===========================
     useEffect(() => {
-        const delayDebounceFn = setTimeout(() => {
-            fetchProducts();
-        }, 300);
+        const delayDebounceFn = setTimeout(() => fetchProducts(false), 300);
+        const intervalId = setInterval(() => fetchProducts(true), 1000); // 1s Auto-refresh
 
-        return () => clearTimeout(delayDebounceFn);
-    }, [searchTerm, token]);
+        return () => {
+            clearTimeout(delayDebounceFn);
+            clearInterval(intervalId);
+        };
+    }, [searchTerm, token, currentPage]);
 
-    const toggleRow = (id) => {
-        setExpandedRowId(prevId => (prevId === id ? null : id));
-    };
+    const handleNextPage = () => { if (currentPage < lastPage) setCurrentPage(prev => prev + 1); };
+    const handlePrevPage = () => { if (currentPage > 1) setCurrentPage(prev => prev - 1); };
 
+    const toggleRow = (id) => setExpandedRowId(prev => (prev === id ? null : id));
+    
     const toggleVariantsSection = (id) => {
-        setCollapsedVariants(prev => ({
-            ...prev,
-            [id]: prev[id] === undefined ? false : !prev[id]
-        }));
+        setCollapsedVariants(prev => ({ ...prev, [id]: prev[id] === undefined ? false : !prev[id] }));
     };
 
     const handleDelete = async (id) => {
@@ -78,22 +124,24 @@ export default function ProTable({ searchTerm }) {
         try {
             const response = await fetch(`${baseUrl}/api/product-delete/${id}`, {
                 method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json'
-                }
+                headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
             });
 
             if (!response.ok) throw new Error('Delete failed');
 
-            setProducts(products.filter((product) => product.id !== id));
+            setProducts(prev => Array.isArray(prev) ? prev.filter(p => p.id !== id) : []);
             if (expandedRowId === id) setExpandedRowId(null);
         } catch (error) {
             alert('ការលុបបរាជ័យ សូមព្យាយាមម្តងទៀត។');
         }
     };
 
-    if (loading && products.length === 0) {
+    const productsList = Array.isArray(products) ? products : [];
+
+    // ===========================
+    // 4. LOADING STATE
+    // ===========================
+    if (loading && productsList.length === 0) {
         return (
             <div className="p-12 text-center text-slate-500 bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center justify-center gap-2 font-['Kantumruy_Pro']">
                 <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
@@ -102,9 +150,12 @@ export default function ProTable({ searchTerm }) {
         );
     }
 
+    // ===========================
+    // 5. RENDER UI
+    // ===========================
     return (
         <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden transition-all duration-300 font-['Kantumruy_Pro']">
-            {/* Header Section */}
+            {/* Header */}
             <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold border border-slate-100 shadow-xs">
@@ -112,19 +163,17 @@ export default function ProTable({ searchTerm }) {
                     </div>
                     <div>
                         <h3 className="text-base font-bold text-slate-800">ការគ្រប់គ្រងផលិតផល</h3>
-                        <p className="text-xs text-slate-500">គ្រប់គ្រងស្តុក តម្លៃ និងទំនិញក្នុងហាងរបស់អ្នក។</p>
+                        <p className="text-xs text-slate-500">គ្រប់គ្រងស្តុក តម្លៃ និងទំនិញ (សរុប: {totalProducts})</p>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                    <button 
-                        onClick={() => setIsOpen(!isOpen)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 rounded-xl text-xs font-semibold transition cursor-pointer shadow-xs"
-                    >
-                        {isOpen ? "លាក់តារាង" : "បង្ហាញតារាង"}
-                        <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
-                    </button>
-                </div>
+                <button 
+                    onClick={() => setIsOpen(!isOpen)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 rounded-xl text-xs font-semibold transition cursor-pointer shadow-xs"
+                >
+                    {isOpen ? "លាក់តារាង" : "បង្ហាញតារាង"}
+                    <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+                </button>
             </div>
 
             {error && (
@@ -133,7 +182,7 @@ export default function ProTable({ searchTerm }) {
                 </div>
             )}
 
-            {/* Collapsible Content Wrapper */}
+            {/* Table Content */}
             <div className={`grid transition-all duration-500 ease-in-out ${isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
                 <div className="overflow-hidden">
                     <div className="overflow-x-auto">
@@ -149,24 +198,24 @@ export default function ProTable({ searchTerm }) {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
-                                {products.length === 0 ? (
+                                {productsList.length === 0 ? (
                                     <tr>
                                         <td colSpan="6" className="py-12 text-center text-slate-400 font-medium">
                                             រកមិនឃើញទិន្នន័យផលិតផលទេ។
                                         </td>
                                     </tr>
                                 ) : (
-                                    products.map((product) => {
+                                    productsList.map((product) => {
                                         const isExpanded = expandedRowId === product.id;
                                         const isVariantsCollapsed = collapsedVariants[product.id] ?? true;
                                         const childVariants = product.variants || product.product_variants || product.child_products || product.productVariants || product.variations || [];
 
                                         return (
                                             <React.Fragment key={product.id}>
+                                                {/* Main Row */}
                                                 <tr className="hover:bg-slate-50/80 transition-colors">
                                                     <td className="py-4 px-6">
                                                         <div className="flex items-center gap-3.5">
-                                                            {/* Product Image */}
                                                             {product.image ? (
                                                                 <img 
                                                                     src={`${process.env.NEXT_PUBLIC_API_URL}/storage/${product.image}`}
@@ -178,7 +227,6 @@ export default function ProTable({ searchTerm }) {
                                                                     គ្មានរូប
                                                                 </div>
                                                             )}
-
                                                             <div>
                                                                 <span className="font-bold text-slate-800 block text-sm">{product.product_name}</span>
                                                                 <span className="text-xs text-slate-400">
@@ -221,7 +269,6 @@ export default function ProTable({ searchTerm }) {
                                                         >
                                                             <Plus className="w-3.5 h-3.5" />
                                                         </button>
-
                                                         <button 
                                                             onClick={() => toggleRow(product.id)}
                                                             className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer inline-flex items-center gap-1 ${
@@ -245,45 +292,21 @@ export default function ProTable({ searchTerm }) {
                                                     </td>
                                                 </tr>
 
-                                                {/* Expanded Detail View */}
+                                                {/* Expanded Details & Variants Row */}
                                                 <tr>
                                                     <td colSpan="6" className="p-0 border-none">
                                                         <div className={`grid transition-all duration-300 ease-in-out bg-slate-50/90 ${
                                                             isExpanded ? 'grid-rows-[1fr] opacity-100 p-6 border-b border-slate-200' : 'grid-rows-[0fr] opacity-0 p-0 border-none'
                                                         }`}>
                                                             <div className="overflow-hidden space-y-6 max-w-5xl mx-auto w-full">
-                                                                
+                                                                {/* Details Info Card */}
                                                                 <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-                                                                    
-                                                                    {/* Expanded Media Column (Image & Video) */}
                                                                     <div className="md:col-span-3 flex flex-col gap-3 items-center justify-center bg-slate-50 p-3 rounded-xl border border-slate-100">
                                                                         {product.image && (
-                                                                            <div className="flex flex-col items-center w-full">
-                                                                                <img 
-                                                                                    src={`${process.env.NEXT_PUBLIC_API_URL}/storage/${product.image}`}
-                                                                                    alt={product.product_name} 
-                                                                                    className="w-28 h-28 object-cover rounded-xl border border-slate-200 shadow-sm"
-                                                                                />
-                                                                                <span className="text-[11px] font-medium text-slate-400 mt-1">រូបភាពផលិតផល</span>
-                                                                            </div>
+                                                                            <img src={`${process.env.NEXT_PUBLIC_API_URL}/storage/${product.image}`} alt={product.product_name} className="w-28 h-28 object-cover rounded-xl border border-slate-200 shadow-sm" />
                                                                         )}
-
-                                                                        {(product.video || product.product_video) && (
-                                                                            <div className="flex flex-col items-center w-full">
-                                                                                <video 
-                                                                                    src={`${process.env.NEXT_PUBLIC_API_URL}/storage/${product.video || product.product_video}`}
-                                                                                    className="w-full h-28 object-cover rounded-xl border border-slate-200 shadow-sm bg-black"
-                                                                                    controls
-                                                                                />
-                                                                                <span className="text-[11px] font-medium text-slate-400 mt-1">វីដេអូផលិតផល</span>
-                                                                            </div>
-                                                                        )}
-
-                                                                        {!product.image && !product.video && !product.product_video && (
-                                                                            <div className="text-xs text-slate-400 text-center py-4">គ្មានឯកសារមេឌៀ</div>
-                                                                        )}
+                                                                        {!product.image && <div className="text-xs text-slate-400 py-4">គ្មានរូបភាព</div>}
                                                                     </div>
-
                                                                     <div className="md:col-span-9 grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                                         <div className="bg-slate-50/60 p-4 rounded-xl border border-slate-100">
                                                                             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">ព័ត៌មានទូទៅ</span>
@@ -291,84 +314,50 @@ export default function ProTable({ searchTerm }) {
                                                                             <p className="text-xs text-slate-500 mt-0.5">ម៉ាក: <span className="font-medium text-slate-700">{product.brand || 'គ្មាន'}</span></p>
                                                                             <p className="text-xs text-slate-500 mt-0.5">SKU: <span className="font-mono text-slate-700">{product.product_sku || 'គ្មាន'}</span></p>
                                                                         </div>
-
                                                                         <div className="bg-slate-50/60 p-4 rounded-xl border border-slate-100">
                                                                             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">តម្លៃ និងស្តុក</span>
                                                                             <div className="text-xs space-y-1 mt-1">
-                                                                                <div className="flex justify-between">
-                                                                                    <span className="text-slate-500">តម្លៃដើម:</span> 
-                                                                                    <span className="text-slate-600">${product.product_cost}</span>
-                                                                                </div>
-                                                                                <div className="flex justify-between">
-                                                                                    <span className="text-slate-500">តម្លៃលក់:</span> 
-                                                                                    <span className="font-bold text-emerald-600">${product.product_price}</span>
-                                                                                </div>
-                                                                                <div className="flex justify-between">
-                                                                                    <span className="text-slate-500">ស្តុកសរុប:</span> 
-                                                                                    <span className="font-medium text-slate-700">{product.product_stock} ឯកតា</span>
-                                                                                </div>
+                                                                                <div className="flex justify-between"><span className="text-slate-500">តម្លៃដើម:</span> <span className="text-slate-600">${product.product_cost}</span></div>
+                                                                                <div className="flex justify-between"><span className="text-slate-500">តម្លៃលក់:</span> <span className="font-bold text-emerald-600">${product.product_price}</span></div>
+                                                                                <div className="flex justify-between"><span className="text-slate-500">ស្តុកសរុប:</span> <span className="font-medium text-slate-700">{product.product_stock} ឯកតា</span></div>
                                                                             </div>
                                                                         </div>
                                                                     </div>
                                                                 </div>
 
+                                                                {/* Variants Section */}
                                                                 <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4">
                                                                     <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                                                                         <div className="flex items-center gap-2">
                                                                             <Layers className="w-4 h-4 text-blue-600" />
-                                                                            <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                                                                                ផលិតផលកូន / ជម្រើសរង (Child Variants)
-                                                                            </h4>
+                                                                            <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">ជម្រើសរង (Child Variants)</h4>
                                                                         </div>
-                                                                        <div className="flex items-center gap-3">
-                                                                            <span className="px-2.5 py-0.5 bg-blue-50 text-blue-600 rounded-full text-xs font-bold">
-                                                                                {childVariants.length} ជម្រើស
-                                                                            </span>
-                                                                            <button 
-                                                                                onClick={() => toggleVariantsSection(product.id)}
-                                                                                className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-semibold transition cursor-pointer inline-flex items-center gap-1"
-                                                                            >
-                                                                                {isVariantsCollapsed ? "បង្ហាញ" : "បិទ (Close)"}
-                                                                                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${isVariantsCollapsed ? '' : 'rotate-180'}`} />
-                                                                            </button>
-                                                                        </div>
+                                                                        <button onClick={() => toggleVariantsSection(product.id)} className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-semibold transition cursor-pointer inline-flex items-center gap-1">
+                                                                            {isVariantsCollapsed ? "បង្ហាញ" : "បិទ"}
+                                                                            <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${isVariantsCollapsed ? '' : 'rotate-180'}`} />
+                                                                        </button>
                                                                     </div>
-
+                                                                    
                                                                     <div className={`grid transition-all duration-300 ease-in-out ${isVariantsCollapsed ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'}`}>
                                                                         <div className="overflow-hidden">
                                                                             {childVariants.length === 0 ? (
-                                                                                <div className="py-8 text-center text-slate-400 text-xs font-medium">
-                                                                                    មិនមានផលិតផលកូន ឬ Variant សម្រាប់ផលិតផលនេះទេ។
-                                                                                </div>
+                                                                                <div className="py-4 text-center text-slate-400 text-xs">មិនមាន Variant ទេ។</div>
                                                                             ) : (
-                                                                                <div className="overflow-x-auto pt-2">
-                                                                                    <table className="w-full text-left border-collapse">
-                                                                                        <tbody>
-                                                                                            {childVariants.map((variant, idx) => (
-                                                                                                <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50">
-                                                                                                    <td className="py-2.5 px-4 font-medium text-slate-800">
-                                                                                                        {variant.variant_name || variant.name || variant.title || 'គ្មានឈ្មោះ'}
-                                                                                                    </td>
-                                                                                                    <td className="py-2.5 px-4">
-                                                                                                        <span className="font-bold text-emerald-600">
-                                                                                                            ${variant.price || variant.product_price || '0.00'}
-                                                                                                        </span>
-                                                                                                    </td>
-                                                                                                    <td className="py-2.5 px-4">
-                                                                                                        <span className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md text-[11px] font-medium">
-                                                                                                            {variant.stock || variant.product_stock || 0} ឯកតា
-                                                                                                        </span>
-                                                                                                    </td>
-                                                                                                </tr>
-                                                                                            ))}
-                                                                                        </tbody>
-                                                                                    </table>
-                                                                                </div>
+                                                                                <table className="w-full text-left border-collapse pt-2">
+                                                                                    <tbody>
+                                                                                        {childVariants.map((variant, idx) => (
+                                                                                            <tr key={idx} className="border-b border-slate-100">
+                                                                                                <td className="py-2 px-3 text-xs font-medium text-slate-800">{variant.variant_name || variant.name || 'គ្មានឈ្មោះ'}</td>
+                                                                                                <td className="py-2 px-3 text-xs font-bold text-emerald-600">${variant.price || '0.00'}</td>
+                                                                                                <td className="py-2 px-3 text-xs text-slate-600">{variant.stock || 0} ឯកតា</td>
+                                                                                            </tr>
+                                                                                        ))}
+                                                                                    </tbody>
+                                                                                </table>
                                                                             )}
                                                                         </div>
                                                                     </div>
                                                                 </div>
-
                                                             </div>
                                                         </div>
                                                     </td>
@@ -381,24 +370,29 @@ export default function ProTable({ searchTerm }) {
                         </table>
                     </div>
 
-                    {selectedProductId && (
-                        <AddProductModal 
-                            productId={selectedProductId} 
-                            token={token} 
-                            onClose={() => setSelectedProductId(null)} 
-                            onSuccess={fetchProducts} 
-                        />
-                    )}
+                    {/* Pagination Footer */}
+                    <div className="p-4 border-t border-slate-200 bg-slate-50/50 flex items-center justify-between">
+                        <span className="text-xs text-slate-500 font-medium">
+                            ទំព័រ <span className="font-bold text-slate-700">{currentPage}</span> / <span className="font-bold text-slate-700">{lastPage}</span> (សរុប: {totalProducts})
+                        </span>
+                        
+                        <div className="flex items-center gap-2">
+                            <button onClick={handlePrevPage} disabled={currentPage === 1} className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1 transition ${currentPage === 1 ? 'bg-slate-100 text-slate-300 cursor-not-allowed' : 'bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 cursor-pointer shadow-xs'}`}>
+                                <ChevronLeft className="w-3.5 h-3.5" /> មុន
+                            </button>
+                            <button onClick={handleNextPage} disabled={currentPage >= lastPage} className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1 transition ${currentPage >= lastPage ? 'bg-slate-100 text-slate-300 cursor-not-allowed' : 'bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 cursor-pointer shadow-xs'}`}>
+                                បន្ទាប់ <ChevronRight className="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+                    </div>
 
-                   {selectUpdate && (
-    <UpdateForm 
-        product={selectUpdate} 
-        isOpen={Boolean(selectUpdate)}
-        token={token} 
-        onClose={() => setSelectUpdate(null)} 
-        onUpdateSuccess={fetchProducts} 
-    />
-)}
+                    {/* Modals */}
+                    {selectedProductId && (
+                        <AddProductModal productId={selectedProductId} token={token} onClose={() => setSelectedProductId(null)} onSuccess={() => fetchProducts(false)} />
+                    )}
+                    {selectUpdate && (
+                        <UpdateForm product={selectUpdate} isOpen={Boolean(selectUpdate)} token={token} onClose={() => setSelectUpdate(null)} onUpdateSuccess={() => fetchProducts(false)} />
+                    )}
                 </div>
             </div>
         </div>

@@ -45,7 +45,7 @@ export default function ProductsModule() {
             </div>
 
                 
-          
+         
            <div className='m-3'>
                 <ProTable searchTerm={searchTerm} />
             </div>
