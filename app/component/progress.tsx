@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { Clock, CheckCircle2, Truck, PackageCheck, ChevronRight, Star, Check } from 'lucide-react';
+
+// Import រូបភាព e.png ពី app/image/e.png
+import logoImage from '@/app/image/e.png';
 
 export default function Progress() {
   const [currentStep, setCurrentStep] = useState<number>(2);
   const [showPopup, setShowPopup] = useState<boolean>(false);
   const [rating, setRating] = useState<number>(5);
-  const [review, setReview] = useState<string>(''); // 🟢 កំណត់ Type ឱ្យច្បាស់ជា string
+  const [review, setReview] = useState<string>('');
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
 
   const steps = [
@@ -17,7 +21,41 @@ export default function Progress() {
 
   const progressWidth = ((currentStep - 1) / (steps.length - 1)) * 100;
 
-  // ⏳ រង់ចាំឱ្យ Animation រត់ដល់ 100% (Step 4) សិន ទើបបង្ហាញ Popup យ៉ាងរលូន
+  // 🔊 មុខងារសម្រាប់លេងសំឡេង (Sound Effect Helper)
+  const playSound = (type: 'click' | 'success') => {
+    try {
+      const audioPath = type === 'success' 
+        ? 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3' 
+        : 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3';
+        
+      const audio = new Audio(audioPath);
+      audio.volume = 0.4;
+      audio.play().catch((e) => console.log("Audio play blocked by browser:", e));
+    } catch (error) {
+      console.log("Audio error:", error);
+    }
+  };
+
+  const handleNextStep = () => {
+    if (currentStep < steps.length) {
+      const nextStep = currentStep + 1;
+      setCurrentStep(nextStep);
+      if (nextStep === 4) {
+        playSound('success');
+      } else {
+        playSound('click');
+      }
+    }
+  };
+
+  const handlePrevStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(prev => prev - 1);
+      playSound('click');
+    }
+  };
+
+  // ⏳ រង់ចាំឱ្យ Animation រត់ដល់ 100% (Step 4) សិន ទើបបង្ហាញ Popup
   useEffect(() => {
     if (currentStep === 4) {
       const timer = setTimeout(() => {
@@ -31,13 +69,14 @@ export default function Progress() {
 
   const handleSubmitReview = (e: React.FormEvent) => {
     e.preventDefault();
+    playSound('success');
     setIsSubmitted(true);
   };
 
   return (
     <div className="w-full mx-auto font-['Kantumruy_Pro'] transition-all duration-500 ease-in-out">
       
-      {/* 1. Progress Bar Container (បង្ហាញពេញទំហំ width និងបាត់ទៅវិញពេល showPopup ឡើង) */}
+      {/* 1. Progress Bar Container */}
       {!showPopup && (
         <div className="w-full p-4 sm:p-6 bg-white rounded-2xl shadow-sm border border-gray-100 transition-all duration-500">
           
@@ -51,18 +90,18 @@ export default function Progress() {
               <p className="text-[11px] text-gray-400 mt-0.5">Order ID: #ORD-2026-98241</p>
             </div>
 
-            {/* Test Trigger Buttons */}
+            {/* Test Trigger Buttons with Sound */}
             <div className="flex items-center gap-1.5">
               <button 
                 disabled={currentStep === 1}
-                onClick={() => setCurrentStep(prev => Math.max(prev - 1, 1))}
+                onClick={handlePrevStep}
                 className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-40 cursor-pointer transition"
               >
                 ថយក្រោយ
               </button>
               <button 
                 disabled={currentStep === steps.length}
-                onClick={() => setCurrentStep(prev => Math.min(prev + 1, steps.length))}
+                onClick={handleNextStep}
                 className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 cursor-pointer transition flex items-center gap-1 shadow-sm"
               >
                 <span>បន្ទាប់</span>
@@ -72,7 +111,7 @@ export default function Progress() {
           </div>
 
           {/* Progress Steps Container */}
-          <div className="relative my-4 px-3 sm:px-6">
+          <div className="relative my-6 px-3 sm:px-6">
             
             {/* Background Grey Line */}
             <div className="absolute top-1/3 left-0 w-full h-1.5 bg-gray-200 -translate-y-1/2 rounded-full z-0" />
@@ -83,6 +122,22 @@ export default function Progress() {
               style={{ width: `${progressWidth}%` }}
             />
 
+            {/* 🎯 Custom Logo (e.png) ដើរតាម Progress Line (ទំហំធំល្មម មើលឃើញច្បាស់) */}
+            <div 
+              className="absolute top-1/3 -translate-y-1/2 z-20 transition-all duration-700 ease-in-out"
+              style={{ left: `calc(${progressWidth}% - 24px)` }}
+            >
+              <div className="w-12 h-12 rounded-full bg-white border-2 border-blue-500 shadow-lg flex items-center justify-center overflow-hidden p-1 animate-bounce">
+                <Image 
+                  src={logoImage} 
+                  alt="Custom Logo" 
+                  width={44} 
+                  height={44} 
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            </div>
+
             {/* Step Circles */}
             <div className="relative z-10 flex justify-between items-center w-full">
               {steps.map((step) => {
@@ -91,8 +146,14 @@ export default function Progress() {
                 const isCurrent = step.id === currentStep;
 
                 return (
-                  <div key={step.id} className="flex flex-col items-center group cursor-pointer" onClick={() => setCurrentStep(step.id)}>
-                    
+                  <div 
+                    key={step.id} 
+                    className="flex flex-col items-center group cursor-pointer" 
+                    onClick={() => {
+                      setCurrentStep(step.id);
+                      playSound('click');
+                    }}
+                  >
                     <div 
                       className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center transition-all duration-500 ease-in-out border shadow-xs ${
                         isCurrent
@@ -147,7 +208,7 @@ export default function Progress() {
                       <button
                         type="button"
                         key={star}
-                        onClick={() => setRating(star)}
+                        onClick={() => { setRating(star); playSound('click'); }}
                         className="cursor-pointer transition-transform hover:scale-110"
                       >
                         <Star 
@@ -171,7 +232,7 @@ export default function Progress() {
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      onClick={() => { setShowPopup(false); setCurrentStep(3); }}
+                      onClick={() => { setShowPopup(false); setCurrentStep(3); playSound('click'); }}
                       className="w-1/3 py-2 rounded-xl text-xs font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200 transition cursor-pointer"
                     >
                       Close
@@ -192,7 +253,7 @@ export default function Progress() {
                 </div>
                 <h4 className="text-base font-bold text-gray-900">Thank you for your feedback!</h4>
                 <button 
-                  onClick={() => { setIsSubmitted(false); setShowPopup(false); setCurrentStep(1); }}
+                  onClick={() => { setIsSubmitted(false); setShowPopup(false); setCurrentStep(1); playSound('click'); }}
                   className="mt-3 px-5 py-2 bg-blue-600 text-white text-xs font-semibold rounded-xl hover:bg-blue-700 transition cursor-pointer"
                 >
                   Done
