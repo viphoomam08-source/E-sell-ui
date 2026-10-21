@@ -83,7 +83,9 @@ export default function CheckoutPage() {
         }
 
         if (orderCode) {
-          router.push(`/track-order?code=${encodeURIComponent(orderCode)}`);
+          window.localStorage.setItem('latest_order_code', orderCode);
+          window.dispatchEvent(new Event('latest-order-code-changed'));
+          router.push('/');
         } else {
           alert('ការបញ្ជាទិញបានជោគជ័យ ប៉ុន្តែ Server មិនបានផ្ញើលេខកូដតាមដានមកទេ។ សូមទាក់ទងផ្នែកជំនួយ។');
         }

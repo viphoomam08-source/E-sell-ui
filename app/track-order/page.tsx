@@ -308,23 +308,25 @@ function TrackingContent() {
           )}
 
           {order && !loading && (
-            <section aria-live="polite" className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <div className="flex items-center gap-3 border-b border-slate-100 bg-slate-50 px-5 py-4">
-                <Truck className="h-5 w-5 text-blue-600" />
-                <div>
-                  <h2 className="font-semibold text-slate-900">Order status</h2>
-                  <p className="text-sm text-slate-600">{status || 'Status not available'}</p>
-                </div>
-              </div>
-              <dl className="divide-y divide-slate-100 px-5">
-                {details.map(({ label, value }) => (
-                  <div key={label} className="flex flex-col gap-1 py-4 sm:flex-row sm:justify-between">
-                    <dt className="text-sm text-slate-500">{label}</dt>
-                    <dd className="break-words text-sm font-medium text-slate-900 sm:max-w-[65%] sm:text-right">{value}</dd>
+            <>
+              <section aria-live="polite" className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div className="flex items-center gap-3 border-b border-slate-100 bg-slate-50 px-5 py-4">
+                  <Truck className="h-5 w-5 text-blue-600" />
+                  <div>
+                    <h2 className="font-semibold text-slate-900">Order status</h2>
+                    <p className="text-sm text-slate-600">{status || 'Status not available'}</p>
                   </div>
-                ))}
-              </dl>
-            </section>
+                </div>
+                <dl className="divide-y divide-slate-100 px-5">
+                  {details.map(({ label, value }) => (
+                    <div key={label} className="flex flex-col gap-1 py-4 sm:flex-row sm:justify-between">
+                      <dt className="text-sm text-slate-500">{label}</dt>
+                      <dd className="break-words text-sm font-medium text-slate-900 sm:max-w-[65%] sm:text-right">{value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </section>
+            </>
           )}
         </div>
       </main>

@@ -36,8 +36,10 @@ export default function Home() {
     <div className="w-full">
       <Search />
 <ShortAnounce />
-<Progress/>
-      <Banner />
+            <div className="mx-auto w-full max-w-5xl px-4 py-4">
+              <Progress />
+            </div>
+            <Banner />
       <VideoReview/>
       <Dicount/>
 
