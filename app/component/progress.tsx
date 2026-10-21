@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, CheckCircle2, Truck, PackageCheck, ChevronRight, Star, Check } from 'lucide-react';
 
-function Progress() {
-  const [currentStep, setCurrentStep] = useState(2);
-  const [showPopup, setShowPopup] = useState(false);
-  const [rating, setRating] = useState(5);
-  const [review, setReview] = useState('');
-  const [isSubmitted, setIsSubmitted] = useState(false);
+export default function Progress() {
+  const [currentStep, setCurrentStep] = useState<number>(2);
+  const [showPopup, setShowPopup] = useState<boolean>(false);
+  const [rating, setRating] = useState<number>(5);
+  const [review, setReview] = useState<string>(''); // 🟢 កំណត់ Type ឱ្យច្បាស់ជា string
+  const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
 
   const steps = [
     { id: 1, title: 'Pending', description: 'រង់ចាំពិនិត្យ', icon: Clock },
@@ -17,19 +17,19 @@ function Progress() {
 
   const progressWidth = ((currentStep - 1) / (steps.length - 1)) * 100;
 
-  // ⏳ ត្រង់នេះ៖ ពេល currentStep ដល់ 4 ត្រូវរង់ចាំ Animation រត់ដល់ 100% សិន ទើបលាក់ Progress ហើយ Pop up
+  // ⏳ រង់ចាំឱ្យ Animation រត់ដល់ 100% (Step 4) សិន ទើបបង្ហាញ Popup យ៉ាងរលូន
   useEffect(() => {
     if (currentStep === 4) {
       const timer = setTimeout(() => {
         setShowPopup(true);
-      }, 800); // Wait 800ms for smooth line animation to finish
+      }, 800); 
       return () => clearTimeout(timer);
     } else {
       setShowPopup(false);
     }
   }, [currentStep]);
 
-  const handleSubmitReview = (e) => {
+  const handleSubmitReview = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitted(true);
   };
@@ -37,12 +37,12 @@ function Progress() {
   return (
     <div className="w-full mx-auto font-['Kantumruy_Pro'] transition-all duration-500 ease-in-out">
       
-      {/* 1. Progress Bar Container (បាត់ត្រឹមតែពេល showPopup === true) */}
+      {/* 1. Progress Bar Container (បង្ហាញពេញទំហំ width និងបាត់ទៅវិញពេល showPopup ឡើង) */}
       {!showPopup && (
-        <div className="w-full p-4 sm:p-5 bg-white rounded-2xl shadow-sm border border-gray-100 transition-all duration-500">
+        <div className="w-full p-4 sm:p-6 bg-white rounded-2xl shadow-sm border border-gray-100 transition-all duration-500">
           
           {/* Header Info & Controls */}
-          <div className="flex items-center justify-between gap-4 mb-5 pb-3 border-b border-gray-100">
+          <div className="flex items-center justify-between gap-4 mb-6 pb-3 border-b border-gray-100">
             <div>
               <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
                 <span className="w-2 h-5 bg-blue-600 rounded-full"></span>
@@ -56,14 +56,14 @@ function Progress() {
               <button 
                 disabled={currentStep === 1}
                 onClick={() => setCurrentStep(prev => Math.max(prev - 1, 1))}
-                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-40 cursor-pointer transition"
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-40 cursor-pointer transition"
               >
                 ថយក្រោយ
               </button>
               <button 
                 disabled={currentStep === steps.length}
                 onClick={() => setCurrentStep(prev => Math.min(prev + 1, steps.length))}
-                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 cursor-pointer transition flex items-center gap-1 shadow-sm"
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 cursor-pointer transition flex items-center gap-1 shadow-sm"
               >
                 <span>បន្ទាប់</span>
                 <ChevronRight size={14} />
@@ -126,7 +126,7 @@ function Progress() {
         </div>
       )}
 
-      {/* 2. Delivered Popup Modal (បង្ហាញតែពេល Animation ដើរដល់ 100% រួចរាល់) */}
+      {/* 2. Delivered Popup Modal */}
       {showPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4 transition-all duration-300">
           <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden border border-gray-100 p-6 relative">
@@ -137,7 +137,6 @@ function Progress() {
                   <PackageCheck size={28} />
                 </div>
                 
-                {/* 🎯 អក្សរអង់គ្លេសខ្លីៗតាមតម្រូវការ */}
                 <h3 className="text-lg font-bold text-gray-900">Your product has been delivered!</h3>
                 <p className="text-xs text-gray-400 mt-1">Please rate your experience with us.</p>
 
@@ -161,9 +160,9 @@ function Progress() {
 
                   {/* Review Textarea */}
                   <textarea 
-                    rows="2"
+                    rows={2}
                     value={review}
-                    onChange={(e) => setReview(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setReview(e.target.value)}
                     placeholder="Write a quick review..."
                     className="w-full p-3 text-xs border border-gray-200 rounded-xl focus:outline-none focus:border-blue-600 bg-gray-50 resize-none"
                   ></textarea>
@@ -208,5 +207,3 @@ function Progress() {
     </div>
   );
 }
-
-export default Progress;
