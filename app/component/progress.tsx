@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Image from 'next/image';
 import { CheckCircle2, Clock, PackageCheck, PackageSearch, Truck, XCircle } from 'lucide-react';
 import logoImage from '@/app/image/e.png';
@@ -62,7 +62,9 @@ export default function Progress() {
   );
   const [orderResult, setOrderResult] = useState({ orderCode: '', status: '', error: '' });
   const [showDeliveredAlert, setShowDeliveredAlert] = useState(false);
+  const [showCancelledAlert, setShowCancelledAlert] = useState(false);
   const [alertedOrderCode, setAlertedOrderCode] = useState('');
+  const cancellationAlertOrderCode = useRef('');
 
   useEffect(() => {
     if (!orderCode) return;
@@ -124,7 +126,7 @@ export default function Progress() {
   const status = orderResult.orderCode === orderCode ? orderResult.status : '';
   const error = orderResult.orderCode === orderCode ? orderResult.error : '';
   const normalizedStatus = status.toLowerCase();
-  const isCancelled = ['cancelled', 'canceled', 'cancel'].includes(normalizedStatus);
+  const isCancelled = normalizedStatus.includes('cancel') || normalizedStatus.includes('បោះបង់');
   const isDelivered = normalizedStatus === 'delivered';
   const currentStep = !orderCode
     ? 0
@@ -144,12 +146,28 @@ export default function Progress() {
       ? 'បានដឹកជញ្ជូន'
       : status;
 
-  const dismissDeliveredOrder = () => {
+  const dismissOrderProgress = () => {
     window.localStorage.setItem(DISMISSED_ORDER_KEY, 'true');
     window.localStorage.removeItem(ORDER_CODE_KEY);
     window.dispatchEvent(new Event(ORDER_CODE_EVENT));
     setShowDeliveredAlert(false);
+    setShowCancelledAlert(false);
   };
+
+  useEffect(() => {
+    if (!isCancelled || !orderCode || cancellationAlertOrderCode.current === orderCode) return;
+
+    cancellationAlertOrderCode.current = orderCode;
+    let dismissTimer: number | undefined;
+    const showTimer = window.setTimeout(() => {
+      setShowCancelledAlert(true);
+      dismissTimer = window.setTimeout(dismissOrderProgress, 7000);
+    }, 0);
+    return () => {
+      window.clearTimeout(showTimer);
+      if (dismissTimer !== undefined) window.clearTimeout(dismissTimer);
+    };
+  }, [isCancelled, orderCode]);
 
   if (isDismissed) return null;
 
@@ -254,6 +272,28 @@ export default function Progress() {
         </div>
       </div>
 
+      {showCancelledAlert && isCancelled && !isDismissed && (
+        <div
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="cancelled-alert-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm"
+        >
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-2xl">
+            <XCircle className="mx-auto mb-3 h-12 w-12 text-rose-600" />
+            <h2 id="cancelled-alert-title" className="text-lg font-bold text-slate-900">
+              ការបញ្ជាទិញរបស់អ្នកត្រូវបានបោះបង់
+            </h2>
+            <p className="mt-2 text-sm text-slate-600">
+              សូមអភ័យទោស ការបញ្ជាទិញនេះត្រូវបានអ្នកលក់បោះបង់។
+            </p>
+            <p className="mt-3 text-xs text-slate-500">
+              សារនេះនឹងបិទដោយស្វ័យប្រវត្តិក្នុងរយៈពេល ៧ វិនាទី។
+            </p>
+          </div>
+        </div>
+      )}
+
       {showDeliveredAlert && isDelivered && !isDismissed && (
         <div
           role="alertdialog"
@@ -271,7 +311,7 @@ export default function Progress() {
             </p>
             <button
               type="button"
-              onClick={dismissDeliveredOrder}
+              onClick={dismissOrderProgress}
               className="mt-5 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
             >
               យល់ព្រម
