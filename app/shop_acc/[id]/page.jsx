@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation';
 import { Star, MapPin, Clock, Bike, Plus, ShieldCheck, MessageCircle } from 'lucide-react';
 import Banner from './banner';
 import Chat from './chat';
+import AboutShop from '../aboutShop';
 
 export default function ShopView() {
   const params = useParams();
@@ -13,9 +14,9 @@ export default function ShopView() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]); 
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('All');
   
-  // State សម្រាប់គ្រប់គ្រងការបើក/បិទប្រអប់ Chat
+  // activeTab៖ អាចជា 'All', 'ABOUT_SHOP', ឬឈ្មោះ Category
+  const [activeTab, setActiveTab] = useState('All');
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   useEffect(() => {
@@ -122,9 +123,24 @@ export default function ShopView() {
                 <span className="flex items-center gap-1.5 bg-amber-50 text-amber-700 px-3 py-1.5 rounded-lg font-semibold shadow-sm border border-amber-100">
                   <Star className="w-4 h-4 fill-amber-400 text-amber-400" /> 4.8
                 </span>
+
                 <span className="flex items-center gap-1.5 bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200">
                   <MapPin className="w-4 h-4 text-blue-500" /> គីឡូម៉ែត្រ
                 </span>
+
+                {/* 🔵 ចុចត្រង់នេះដើម្បីដូរទៅបង្ហាញ About Shop Dynamic */}
+                <button 
+                  onClick={() => setActiveTab('ABOUT_SHOP')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all cursor-pointer font-medium ${
+                    activeTab === 'ABOUT_SHOP' 
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-sm' 
+                      : 'bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-600 border-gray-200'
+                  }`}
+                >
+                  <MapPin className={`w-4 h-4 ${activeTab === 'ABOUT_SHOP' ? 'text-white' : 'text-blue-500'}`} /> 
+                  <span>About shop</span>
+                </button>
+
                 <span className="flex items-center gap-1.5 bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200">
                   <Clock className="w-4 h-4 text-blue-500" /> ~31 នាទី
                 </span>
@@ -145,7 +161,7 @@ export default function ShopView() {
         </div>
       </div>
 
-      {/* 2. Full-Width Stretch Promotional Banner Slider */}
+      {/* 2. Promotional Banner */}
       <div className="w-full my-6">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="rounded-2xl overflow-hidden shadow-md">
@@ -157,6 +173,8 @@ export default function ShopView() {
       {/* 3. Sticky Category Tabs */}
       <div className="sticky top-0 bg-white/90 backdrop-blur-md shadow-sm z-30 py-3">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center gap-2 overflow-x-auto no-scrollbar">
+          
+          {/* Categories Buttons */}
           {categories.map((cat, index) => (
             <button
               key={index}
@@ -170,73 +188,102 @@ export default function ShopView() {
               {cat}
             </button>
           ))}
+
+          {/* About Shop Tab Button ន្ថែមក្នុង Sticky Menu */}
+          <button
+            onClick={() => setActiveTab('ABOUT_SHOP')}
+            className={`px-5 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all shadow-sm ${
+              activeTab === 'ABOUT_SHOP' 
+                ? 'bg-blue-600 text-white shadow-blue-200 shadow-md scale-105' 
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            About Shop
+          </button>
+
         </div>
       </div>
 
-      {/* 4. Product Listing Section */}
+      {/* 4. Dynamic Content Area (ផ្លាស់ប្តូរក្នុងកន្លែងតែមួយ) */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 mt-8">
-        <h2 className="text-xl font-bold text-gray-900 mb-5 flex items-center gap-2">
-          <span className="w-2 h-6 bg-blue-600 rounded-full"></span>
-          ម៉ឺនុយហាង (Menu)
-        </h2>
+        
+        {/* ប្រសិនបើ activeTab === 'ABOUT_SHOP' វានឹងបង្ហាញ <AboutShop/> ក្នុងកន្លែងនេះ */}
+        {activeTab === 'ABOUT_SHOP' ? (
+          <div>
+            <h2 className="text-xl font-bold text-gray-900 mb-5 flex items-center gap-2">
+              <span className="w-2 h-6 bg-blue-600 rounded-full"></span>
+              សកម្មភាព និងព័ត៌មានហាង (About Shop)
+            </h2>
+            <AboutShop shopData={shop} />
+          </div>
+        ) : (
+          /* ប្រសិនបើជ្រើសរើស Category ផ្សេងៗ វានឹងបង្ហាញ Menu ទំនិញដូចធម្មតា */
+          <div>
+            <h2 className="text-xl font-bold text-gray-900 mb-5 flex items-center gap-2">
+              <span className="w-2 h-6 bg-blue-600 rounded-full"></span>
+              ម៉ឺនុយហាង ({activeTab})
+            </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filteredProducts.length > 0 ? (
-            filteredProducts.map((item) => {
-              const productName = item.product_name || item.name;
-              const productPrice = Number(item.product_price || item.price || 0);
-              const productImage = item.image;
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filteredProducts.length > 0 ? (
+                filteredProducts.map((item) => {
+                  const productName = item.product_name || item.name;
+                  const productPrice = Number(item.product_price || item.price || 0);
+                  const productImage = item.image;
 
-              return (
-                <div 
-                  key={item.id}
-                  className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center justify-between gap-4 hover:shadow-lg transition-all duration-200 group"
-                >
-                  <div className="flex items-center gap-4 flex-1">
-                    <div className="w-24 h-24 sm:w-28 sm:h-28 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center relative">
-                      {productImage ? (
-                        <img 
-                          src={`${process.env.NEXT_PUBLIC_API_URL}/storage/${productImage}`}
-                          alt={productName} 
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
-                        />
-                      ) : (
-                        <span className="text-xs text-gray-400 font-medium">គ្មានរូបភាព</span>
-                      )}
-                    </div>
+                  return (
+                    <div 
+                      key={item.id}
+                      className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center justify-between gap-4 hover:shadow-lg transition-all duration-200 group"
+                    >
+                      <div className="flex items-center gap-4 flex-1">
+                        <div className="w-24 h-24 sm:w-28 sm:h-28 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center relative">
+                          {productImage ? (
+                            <img 
+                              src={`${process.env.NEXT_PUBLIC_API_URL}/storage/${productImage}`}
+                              alt={productName} 
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                            />
+                          ) : (
+                            <span className="text-xs text-gray-400 font-medium">គ្មានរូបភាព</span>
+                          )}
+                        </div>
 
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-base font-bold text-gray-900 truncate group-hover:text-blue-600 transition-colors">
-                        {productName}
-                      </h3>
-                      <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{item.product_description || 'គ្មានការពិពណ៌នា'}</p>
-                      <p className="text-xs text-gray-400 mt-0.5 line-clamp-1"> Brand: {item.brand || 'គ្មានម៉ាក'}</p>
-                      <div className="mt-2 flex items-baseline gap-2">
-                        <span className="text-blue-600 font-extrabold text-lg">
-                          ${productPrice.toFixed(2)}
-                        </span>
-                        <span className="text-xs text-gray-400">
-                          ≈ {(productPrice * 4100).toLocaleString()}៛
-                        </span>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-base font-bold text-gray-900 truncate group-hover:text-blue-600 transition-colors">
+                            {productName}
+                          </h3>
+                          <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{item.product_description || 'គ្មានការពិពណ៌នា'}</p>
+                          <p className="text-xs text-gray-400 mt-0.5 line-clamp-1"> Brand: {item.brand || 'គ្មានម៉ាក'}</p>
+                          <div className="mt-2 flex items-baseline gap-2">
+                            <span className="text-blue-600 font-extrabold text-lg">
+                              ${productPrice.toFixed(2)}
+                            </span>
+                            <span className="text-xs text-gray-400">
+                              ≈ {(productPrice * 4100).toLocaleString()}៛
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
 
-                  <button 
-                    className="w-11 h-11 rounded-xl bg-blue-600 text-white hover:bg-blue-700 flex items-center justify-center shadow-md transition-all active:scale-95 flex-shrink-0 cursor-pointer hover:shadow-blue-200 hover:shadow-lg"
-                    title="Add Item"
-                  >
-                    <Plus className="w-5 h-5" />
-                  </button>
+                      <button 
+                        className="w-11 h-11 rounded-xl bg-blue-600 text-white hover:bg-blue-700 flex items-center justify-center shadow-md transition-all active:scale-95 flex-shrink-0 cursor-pointer hover:shadow-blue-200 hover:shadow-lg"
+                        title="Add Item"
+                      >
+                        <Plus className="w-5 h-5" />
+                      </button>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="col-span-full bg-white rounded-2xl p-12 text-center text-gray-400 text-sm shadow-sm border border-gray-100">
+                  មិនមានទំនិញនៅក្នុងប្រភេទនេះទេ
                 </div>
-              );
-            })
-          ) : (
-            <div className="col-span-full bg-white rounded-2xl p-12 text-center text-gray-400 text-sm shadow-sm border border-gray-100">
-              មិនមានទំនិញនៅក្នុងប្រភេទនេះទេ
+              )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
+
       </div>
 
       {/* Embedded Chat Component */}

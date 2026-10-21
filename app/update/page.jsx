@@ -144,7 +144,7 @@ export default function WhatsNewPage() {
                 តាមដានមុខងារថ្មីៗ ការកែលម្អ និងព័ត៌មានពីហាង E-Sell របស់យើង។
               </p>
             </div>
-
+    
             <div className="flex items-center gap-3 self-start rounded-2xl border border-white/20 bg-white/10 px-4 py-3 backdrop-blur-sm sm:self-auto">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15">
                 <Megaphone className="h-5 w-5" aria-hidden="true" />
