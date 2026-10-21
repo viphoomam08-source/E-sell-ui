@@ -138,7 +138,7 @@ export function ProductDetail() {
     const token = localStorage.getItem('token') || localStorage.getItem('access_token');
     if (!token) {
       alert('សូមធ្វើការ Login ជា Buyer ជាមុនសិន!');
-      router.push('/login');
+      router.push('/');
       return;
     }
 
@@ -170,7 +170,7 @@ export function ProductDetail() {
         if (response.status === 401) {
           localStorage.removeItem('access_token');
           alert('Session បានផុតកំណត់ ឬអ្នកមិនទាន់ Login ទេ។ សូម Login ម្តងទៀត!');
-          router.push('/login');
+          router.push('/');
           return;
         }
         alert(data.message || 'មានបញ្ហាក្នុងការបន្ថែមទំនិញចូលកន្ត្រក!');
@@ -185,7 +185,7 @@ export function ProductDetail() {
     const token = localStorage.getItem('token') || localStorage.getItem('access_token');
     if (!token) {
       alert('សូមធ្វើការ Login ជា Buyer ជាមុនសិន!');
-      router.push('/login');
+      router.push('/');
       return;
     }
 

@@ -272,9 +272,7 @@ export default function Search() {
         </div>
 
         <div className="hidden md:flex items-center space-x-4">
-          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 text-slate-600 font-medium border border-slate-200">
-            🛒
-          </div>
+          
 
           {user ? (
             <div className="relative" ref={dropdownRef}>
