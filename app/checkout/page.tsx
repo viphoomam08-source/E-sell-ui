@@ -83,6 +83,7 @@ export default function CheckoutPage() {
         }
 
         if (orderCode) {
+          window.localStorage.removeItem('latest_order_progress_dismissed');
           window.localStorage.setItem('latest_order_code', orderCode);
           window.dispatchEvent(new Event('latest-order-code-changed'));
           router.push('/');

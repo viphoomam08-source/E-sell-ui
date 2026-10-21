@@ -2,12 +2,13 @@
 
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import Image from 'next/image';
-import { CheckCircle2, Clock, PackageCheck, PackageSearch, Truck } from 'lucide-react';
+import { CheckCircle2, Clock, PackageCheck, PackageSearch, Truck, XCircle } from 'lucide-react';
 import logoImage from '@/app/image/e.png';
 
 type OrderRecord = Record<string, unknown>;
 
 const ORDER_CODE_KEY = 'latest_order_code';
+const DISMISSED_ORDER_KEY = 'latest_order_progress_dismissed';
 const ORDER_CODE_EVENT = 'latest-order-code-changed';
 
 const steps = [
@@ -15,6 +16,7 @@ const steps = [
   { id: 2, title: 'Confirmed', description: 'បានបញ្ជាក់', icon: CheckCircle2 },
   { id: 3, title: 'Shipping', description: 'កំពុងដឹកជញ្ជូន', icon: Truck },
   { id: 4, title: 'Delivered', description: 'បានប្រគល់', icon: PackageCheck },
+  { id: 5, title: 'Cancelled', description: 'បានបោះបង់', icon: XCircle },
 ];
 
 function subscribeToOrderCode(onChange: () => void) {
@@ -28,6 +30,10 @@ function subscribeToOrderCode(onChange: () => void) {
 
 function getOrderCodeSnapshot() {
   return window.localStorage.getItem(ORDER_CODE_KEY)?.trim() ?? '';
+}
+
+function getDismissedSnapshot() {
+  return window.localStorage.getItem(DISMISSED_ORDER_KEY) === 'true';
 }
 
 function getServerOrderCodeSnapshot() {
@@ -49,7 +55,14 @@ export default function Progress() {
     getOrderCodeSnapshot,
     getServerOrderCodeSnapshot,
   );
+  const isDismissed = useSyncExternalStore(
+    subscribeToOrderCode,
+    getDismissedSnapshot,
+    () => false,
+  );
   const [orderResult, setOrderResult] = useState({ orderCode: '', status: '', error: '' });
+  const [showDeliveredAlert, setShowDeliveredAlert] = useState(false);
+  const [alertedOrderCode, setAlertedOrderCode] = useState('');
 
   useEffect(() => {
     if (!orderCode) return;
@@ -81,6 +94,10 @@ export default function Progress() {
 
         if (!cancelled) {
           setOrderResult({ orderCode, status: order.status, error: '' });
+          if (order.status.toLowerCase() === 'delivered' && alertedOrderCode !== orderCode) {
+            setAlertedOrderCode(orderCode);
+            setShowDeliveredAlert(true);
+          }
         }
       } catch (trackingError) {
         console.error('Order tracking failed:', trackingError);
@@ -102,14 +119,18 @@ export default function Progress() {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [orderCode]);
+  }, [alertedOrderCode, orderCode]);
 
   const status = orderResult.orderCode === orderCode ? orderResult.status : '';
   const error = orderResult.orderCode === orderCode ? orderResult.error : '';
   const normalizedStatus = status.toLowerCase();
+  const isCancelled = ['cancelled', 'canceled', 'cancel'].includes(normalizedStatus);
+  const isDelivered = normalizedStatus === 'delivered';
   const currentStep = !orderCode
     ? 0
-    : normalizedStatus.includes('deliver') || normalizedStatus.includes('complete')
+    : isCancelled
+      ? 5
+      : normalizedStatus.includes('deliver') || normalizedStatus.includes('complete')
       ? 4
       : normalizedStatus.includes('ship')
         ? 3
@@ -117,10 +138,24 @@ export default function Progress() {
           ? 2
           : 1;
   const progressWidth = Math.max(0, ((currentStep - 1) / (steps.length - 1)) * 100);
+  const displayStatus = isCancelled
+    ? 'បានបោះបង់'
+    : isDelivered
+      ? 'បានដឹកជញ្ជូន'
+      : status;
+
+  const dismissDeliveredOrder = () => {
+    window.localStorage.setItem(DISMISSED_ORDER_KEY, 'true');
+    window.localStorage.removeItem(ORDER_CODE_KEY);
+    window.dispatchEvent(new Event(ORDER_CODE_EVENT));
+    setShowDeliveredAlert(false);
+  };
+
+  if (isDismissed) return null;
 
   return (
     <section
-      aria-label={orderCode ? `Order ${orderCode} progress: ${status}` : 'Order progress'}
+      aria-label={orderCode ? `Order ${orderCode} progress: ${displayStatus}` : 'Order progress'}
       className="w-full rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all duration-500 sm:p-6"
     >
       <div className="mb-6 flex items-center justify-between gap-4 border-b border-gray-100 pb-3">
@@ -134,7 +169,7 @@ export default function Progress() {
           </p>
         </div>
         <div className="rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600">
-          {status || (orderCode ? 'Loading status...' : 'No order yet')}
+          {displayStatus || (orderCode ? 'Loading status...' : 'No order yet')}
         </div>
       </div>
 
@@ -153,7 +188,7 @@ export default function Progress() {
 
       <div className="relative my-6 px-3 sm:px-6">
         <div className="absolute left-0 top-1/3 z-0 h-1.5 w-full -translate-y-1/2 rounded-full bg-gray-200" />
-        {orderCode && (
+        {orderCode && !isCancelled && (
           <>
             <div
               className="absolute left-0 top-1/3 z-0 h-1.5 -translate-y-1/2 rounded-full bg-gradient-to-r from-yellow-400 via-blue-500 to-blue-600 transition-all duration-700 ease-in-out"
@@ -179,15 +214,17 @@ export default function Progress() {
         <div className="relative z-10 flex w-full items-center justify-between">
           {steps.map((step) => {
             const Icon = step.icon;
-            const isCompleted = step.id < currentStep;
+            const isCompleted = !isCancelled && step.id < currentStep;
             const isCurrent = step.id === currentStep;
 
             return (
               <div key={step.id} className="group flex flex-col items-center">
                 <div
                   className={`flex h-10 w-10 items-center justify-center rounded-xl border shadow-xs transition-all duration-500 ease-in-out sm:h-11 sm:w-11 ${
-                    isCurrent
-                      ? 'scale-105 animate-pulse border-amber-300 bg-amber-400 text-slate-900 shadow-md shadow-amber-400/30'
+                    isCurrent && isCancelled
+                      ? 'scale-105 animate-pulse border-rose-300 bg-rose-500 text-white shadow-md shadow-rose-400/30'
+                      : isCurrent
+                        ? 'scale-105 animate-pulse border-amber-300 bg-amber-400 text-slate-900 shadow-md shadow-amber-400/30'
                       : isCompleted
                         ? 'scale-100 border-blue-600 bg-blue-600 text-white'
                         : 'border-gray-200 bg-white text-gray-400'
@@ -197,7 +234,13 @@ export default function Progress() {
                 </div>
                 <div className="mt-2 text-center">
                   <p className={`text-xs font-bold transition-colors duration-300 sm:text-sm ${
-                    isCurrent ? 'text-amber-600' : isCompleted ? 'text-blue-600' : 'text-gray-400'
+                    isCurrent && isCancelled
+                      ? 'text-rose-600'
+                      : isCurrent
+                        ? 'text-amber-600'
+                        : isCompleted
+                          ? 'text-blue-600'
+                          : 'text-gray-400'
                   }`}>
                     {step.title}
                   </p>
@@ -210,6 +253,32 @@ export default function Progress() {
           })}
         </div>
       </div>
+
+      {showDeliveredAlert && isDelivered && !isDismissed && (
+        <div
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="delivered-alert-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm"
+        >
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-2xl">
+            <PackageCheck className="mx-auto mb-3 h-12 w-12 text-emerald-600" />
+            <h2 id="delivered-alert-title" className="text-lg font-bold text-slate-900">
+              ទំនិញរបស់អ្នកត្រូវបានដឹកជញ្ជូនដល់ហើយ!
+            </h2>
+            <p className="mt-2 text-sm text-slate-600">
+              សូមអរគុណសម្រាប់ការបញ្ជាទិញ។ សង្ឃឹមថាអ្នកពេញចិត្តនឹងផលិតផលរបស់យើង។
+            </p>
+            <button
+              type="button"
+              onClick={dismissDeliveredOrder}
+              className="mt-5 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+            >
+              យល់ព្រម
+            </button>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
