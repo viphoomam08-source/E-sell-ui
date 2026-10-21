@@ -41,7 +41,7 @@ export default function CartPage() {
 
         } catch (err) {
             console.error("Fetch Error:", err);
-            setError('មានបញ្ហាក្នុងការតភ្ជាប់ទៅកាន់ Server');
+            setError('No product ');
         } finally {
             setLoading(false);
         }
