@@ -48,7 +48,7 @@ export default function Home() {
 
       <ProductCard selectedSubId={selectedSubId} />
       <DiscountDisplay/>
-      <Circlechat unreadCount={1}/>
+    
       <Footer/>
     </div>
   );
