@@ -195,7 +195,7 @@ export default function Progress() {
       }
 
       const res = await fetch(`${baseUrl}/api/buyer/update-telegram`, {
-        method: 'PUT',
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
