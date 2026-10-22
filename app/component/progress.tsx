@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Image from 'next/image';
-import { CheckCircle2, Clock, PackageCheck, PackageSearch, Truck, XCircle } from 'lucide-react';
+import { CheckCircle2, Clock, PackageCheck, PackageSearch, Truck, XCircle, Star, Check, Bell, BellRing } from 'lucide-react';
 import logoImage from '@/app/image/e.png';
 
 type OrderRecord = Record<string, unknown>;
@@ -60,11 +60,34 @@ export default function Progress() {
     getDismissedSnapshot,
     () => false,
   );
+
   const [orderResult, setOrderResult] = useState({ orderCode: '', status: '', error: '' });
   const [showDeliveredAlert, setShowDeliveredAlert] = useState(false);
   const [showCancelledAlert, setShowCancelledAlert] = useState(false);
   const [alertedOrderCode, setAlertedOrderCode] = useState('');
   const cancellationAlertOrderCode = useRef('');
+
+  // 🌟 States សម្រាប់ Sound, Review Popup និង Telegram
+  const [rating, setRating] = useState<number>(5);
+  const [review, setReview] = useState<string>('');
+  const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
+  const [isTelegramSubscribed, setIsTelegramSubscribed] = useState(false);
+  const [telegramLoading, setTelegramLoading] = useState(false);
+
+  // 🔊 មុខងារលេងសំឡេង (Sound Effect Helper)
+  const playSound = (type: 'click' | 'success') => {
+    try {
+      const audioPath = type === 'success' 
+        ? 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3' 
+        : 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3';
+        
+      const audio = new Audio(audioPath);
+      audio.volume = 0.4;
+      audio.play().catch((e) => console.log("Audio play blocked by browser:", e));
+    } catch (error) {
+      console.log("Audio error:", error);
+    }
+  };
 
   useEffect(() => {
     if (!orderCode) return;
@@ -99,6 +122,7 @@ export default function Progress() {
           if (order.status.toLowerCase() === 'delivered' && alertedOrderCode !== orderCode) {
             setAlertedOrderCode(orderCode);
             setShowDeliveredAlert(true);
+            playSound('success');
           }
         }
       } catch (trackingError) {
@@ -128,6 +152,7 @@ export default function Progress() {
   const normalizedStatus = status.toLowerCase();
   const isCancelled = normalizedStatus.includes('cancel') || normalizedStatus.includes('បោះបង់');
   const isDelivered = normalizedStatus === 'delivered';
+  
   const currentStep = !orderCode
     ? 0
     : isCancelled
@@ -139,6 +164,7 @@ export default function Progress() {
         : normalizedStatus.includes('confirm') || normalizedStatus.includes('process')
           ? 2
           : 1;
+
   const progressWidth = Math.max(0, ((currentStep - 1) / (steps.length - 1)) * 100);
   const displayStatus = isCancelled
     ? 'បានបោះបង់'
@@ -152,6 +178,45 @@ export default function Progress() {
     window.dispatchEvent(new Event(ORDER_CODE_EVENT));
     setShowDeliveredAlert(false);
     setShowCancelledAlert(false);
+    playSound('click');
+  };
+
+  // 📱 មុខងារភ្ជាប់ Telegram
+  const handleToggleTelegram = async () => {
+    setTelegramLoading(true);
+    try {
+      const token = localStorage.getItem('access_token') || localStorage.getItem('token');
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, '');
+      
+      const chatId = prompt("សូមបញ្ចូល Telegram Chat ID របស់អ្នក (ឧទាហរណ៍ទទួលបានពី @userinfobot):");
+      if (!chatId) {
+        setTelegramLoading(false);
+        return;
+      }
+
+      const res = await fetch(`${baseUrl}/api/buyer/update-telegram`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ telegram_chat_id: chatId })
+      });
+
+      const data = await res.json();
+      if (data.status) {
+        setIsTelegramSubscribed(true);
+        playSound('success');
+        alert("ភ្ជាប់ Telegram ទទួលបានដំណឹងជោគជ័យ!");
+      } else {
+        alert(data.message || "មានបញ្ហាខុសឆ្គង!");
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setTelegramLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -161,6 +226,7 @@ export default function Progress() {
     let dismissTimer: number | undefined;
     const showTimer = window.setTimeout(() => {
       setShowCancelledAlert(true);
+      playSound('success');
       dismissTimer = window.setTimeout(dismissOrderProgress, 7000);
     }, 0);
     return () => {
@@ -169,12 +235,18 @@ export default function Progress() {
     };
   }, [isCancelled, orderCode]);
 
+  const handleSubmitReview = (e: React.FormEvent) => {
+    e.preventDefault();
+    playSound('success');
+    setIsSubmitted(true);
+  };
+
   if (isDismissed) return null;
 
   return (
     <section
       aria-label={orderCode ? `Order ${orderCode} progress: ${displayStatus}` : 'Order progress'}
-      className="w-full rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all duration-500 sm:p-6"
+      className="w-full rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all duration-500 sm:p-6 font-['Kantumruy_Pro']"
     >
       <div className="mb-6 flex items-center justify-between gap-4 border-b border-gray-100 pb-3">
         <div>
@@ -204,6 +276,7 @@ export default function Progress() {
         </p>
       )}
 
+      {/* Progress Bar Container */}
       <div className="relative my-6 px-3 sm:px-6">
         <div className="absolute left-0 top-1/3 z-0 h-1.5 w-full -translate-y-1/2 rounded-full bg-gray-200" />
         {orderCode && !isCancelled && (
@@ -212,6 +285,7 @@ export default function Progress() {
               className="absolute left-0 top-1/3 z-0 h-1.5 -translate-y-1/2 rounded-full bg-gradient-to-r from-yellow-400 via-blue-500 to-blue-600 transition-all duration-700 ease-in-out"
               style={{ width: `${progressWidth}%` }}
             />
+            {/* 🎯 Custom Logo (e.png) រត់តាមបន្ទាត់ Progress */}
             <div
               className="absolute top-1/3 z-20 -translate-y-1/2 transition-all duration-700 ease-in-out"
               style={{ left: `calc(${progressWidth}% - 24px)` }}
@@ -243,9 +317,9 @@ export default function Progress() {
                       ? 'scale-105 animate-pulse border-rose-300 bg-rose-500 text-white shadow-md shadow-rose-400/30'
                       : isCurrent
                         ? 'scale-105 animate-pulse border-amber-300 bg-amber-400 text-slate-900 shadow-md shadow-amber-400/30'
-                      : isCompleted
-                        ? 'scale-100 border-blue-600 bg-blue-600 text-white'
-                        : 'border-gray-200 bg-white text-gray-400'
+                        : isCompleted
+                          ? 'scale-100 border-blue-600 bg-blue-600 text-white'
+                          : 'border-gray-200 bg-white text-gray-400'
                   }`}
                 >
                   <Icon className={`h-5 w-5 transition-transform duration-300 ${isCurrent ? 'scale-110' : ''}`} />
@@ -272,50 +346,110 @@ export default function Progress() {
         </div>
       </div>
 
+      {/* 🔔 Telegram Alert Toggle Button */}
+      {orderCode && (
+        <div className="mt-6 p-4 bg-blue-50/60 rounded-2xl border border-blue-100 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isTelegramSubscribed ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border border-blue-200'}`}>
+              {isTelegramSubscribed ? <BellRing size={20} /> : <Bell size={20} />}
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-slate-900">ទទួលដំណឹងតាម Telegram</h4>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                {isTelegramSubscribed ? 'បានបើកដំណើរការទទួលដំណឹងស្វ័យប្រវត្តិ' : 'ទទួលបានសារแจ้งเตือนពេល Status ផ្លាស់ប្ដូរ'}
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            disabled={telegramLoading}
+            onClick={handleToggleTelegram}
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+              isTelegramSubscribed ? 'bg-emerald-600 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
+          >
+            {telegramLoading ? 'កំពុងដំណើរការ...' : isTelegramSubscribed ? <><Check size={14} /> បានបើក</> : 'Enable Telegram'}
+          </button>
+        </div>
+      )}
+
+      {/* Cancelled Alert Modal */}
       {showCancelledAlert && isCancelled && !isDismissed && (
-        <div
-          role="alertdialog"
-          aria-modal="true"
-          aria-labelledby="cancelled-alert-title"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm"
-        >
+        <div role="alertdialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-2xl">
             <XCircle className="mx-auto mb-3 h-12 w-12 text-rose-600" />
-            <h2 id="cancelled-alert-title" className="text-lg font-bold text-slate-900">
-              ការបញ្ជាទិញរបស់អ្នកត្រូវបានបោះបង់
-            </h2>
-            <p className="mt-2 text-sm text-slate-600">
-              សូមអភ័យទោស ការបញ្ជាទិញនេះត្រូវបានអ្នកលក់បោះបង់។
-            </p>
-            <p className="mt-3 text-xs text-slate-500">
-              សារនេះនឹងបិទដោយស្វ័យប្រវត្តិក្នុងរយៈពេល ៧ វិនាទី។
-            </p>
+            <h2 className="text-lg font-bold text-slate-900">ការបញ្ជាទិញរបស់អ្នកត្រូវបានបោះបង់</h2>
+            <p className="mt-2 text-sm text-slate-600">សូមអភ័យទោស ការបញ្ជាទិញនេះត្រូវបានអ្នកលក់បោះបង់។</p>
           </div>
         </div>
       )}
 
+      {/* Delivered & Review Popup Modal */}
       {showDeliveredAlert && isDelivered && !isDismissed && (
-        <div
-          role="alertdialog"
-          aria-modal="true"
-          aria-labelledby="delivered-alert-title"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm"
-        >
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-2xl">
-            <PackageCheck className="mx-auto mb-3 h-12 w-12 text-emerald-600" />
-            <h2 id="delivered-alert-title" className="text-lg font-bold text-slate-900">
-              ទំនិញរបស់អ្នកត្រូវបានដឹកជញ្ជូនដល់ហើយ!
-            </h2>
-            <p className="mt-2 text-sm text-slate-600">
-              សូមអរគុណសម្រាប់ការបញ្ជាទិញ។ សង្ឃឹមថាអ្នកពេញចិត្តនឹងផលិតផលរបស់យើង។
-            </p>
-            <button
-              type="button"
-              onClick={dismissOrderProgress}
-              className="mt-5 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
-            >
-              យល់ព្រម
-            </button>
+        <div role="alertdialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden border border-gray-100 p-6 relative">
+            {!isSubmitted ? (
+              <div className="text-center">
+                <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl border border-emerald-100 flex items-center justify-center mx-auto mb-3 shadow-sm">
+                  <PackageCheck size={28} />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900">Your product has been delivered!</h3>
+                <p className="text-xs text-gray-400 mt-1">Please rate your experience with us.</p>
+
+                <form onSubmit={handleSubmitReview} className="space-y-4 mt-4">
+                  <div className="flex justify-center gap-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        type="button"
+                        key={star}
+                        onClick={() => { setRating(star); playSound('click'); }}
+                        className="cursor-pointer transition-transform hover:scale-110"
+                      >
+                        <Star size={26} className={`${star <= rating ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}`} />
+                      </button>
+                    ))}
+                  </div>
+
+                  <textarea 
+                    rows={2}
+                    value={review}
+                    onChange={(e) => setReview(e.target.value)}
+                    placeholder="Write a quick review..."
+                    className="w-full p-3 text-xs border border-gray-200 rounded-xl focus:outline-none focus:border-blue-600 bg-gray-50 resize-none text-slate-900"
+                  ></textarea>
+
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={dismissOrderProgress}
+                      className="w-1/3 py-2 rounded-xl text-xs font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200 transition cursor-pointer"
+                    >
+                      Close
+                    </button>
+                    <button
+                      type="submit"
+                      className="w-2/3 py-2 rounded-xl text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 shadow-md transition cursor-pointer flex items-center justify-center gap-1"
+                    >
+                      <Check size={16} /> Submit
+                    </button>
+                  </div>
+                </form>
+              </div>
+            ) : (
+              <div className="text-center py-4 space-y-2">
+                <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto">
+                  <Check size={24} />
+                </div>
+                <h4 className="text-base font-bold text-gray-900">Thank you for your feedback!</h4>
+                <button 
+                  onClick={dismissOrderProgress}
+                  className="mt-3 px-5 py-2 bg-blue-600 text-white text-xs font-semibold rounded-xl hover:bg-blue-700 transition cursor-pointer"
+                >
+                  Done
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
