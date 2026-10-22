@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Image as ImageIcon, Send, X } from 'lucide-react';
 
-export default function DailyPost({ onPostCreated }) {
+export default function DailyPost({ onPostCreated = () => {} }) {
   const [text, setText] = useState('');
   const [image, setImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
@@ -19,7 +19,7 @@ export default function DailyPost({ onPostCreated }) {
     e.preventDefault();
     if (!text.trim() && !image) return;
 
-    // ១. ទាញយក Token ពី localStorage (សូមផ្ទៀងផ្ទាត់ឈ្មោះ Key ឱ្យត្រូវនឹងពេល Login របស់បង ឧទាហរណ៍: 'token', 'seller_token', ឬ 'auth_token')
+    // ទាញយក Token របស់អ្នកលក់ពី localStorage
     const token = localStorage.getItem('token') || localStorage.getItem('seller_token');
 
     const formData = new FormData();
@@ -34,7 +34,7 @@ export default function DailyPost({ onPostCreated }) {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
-          'Authorization': `Bearer ${token}` // ២. បញ្ជូន Token ទៅជាមួយ Header យ៉ាងត្រឹមត្រូវ
+          'Authorization': `Bearer ${token}`
         },
         body: formData,
       });
@@ -45,7 +45,7 @@ export default function DailyPost({ onPostCreated }) {
         setText('');
         setImage(null);
         setImagePreview(null);
-        if (onPostCreated) onPostCreated(data.data);
+        onPostCreated(data.data);
       } else {
         alert(data.message || 'មានបញ្ហាអ្វីមួយកើតឡើង!');
       }
