@@ -108,7 +108,7 @@ export default function ProductCard({ selectedSubId }) {
     }
   };
 
-  const handleAddToCart = async (product, qty = 1, e) => {
+  const handleAddToCart = async (product, qty = 1, e = null) => {
     if (e) e.stopPropagation();
     
     const token = localStorage.getItem('token') || localStorage.getItem('access_token') || localStorage.getItem('jwt_token');
@@ -322,7 +322,7 @@ export default function ProductCard({ selectedSubId }) {
             <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
               <span className="text-xs font-extrabold text-blue-600">${product.product_price}</span>
               <button 
-                onClick={() => handleAddToCart(product, 1)}
+                onClick={(e) => handleAddToCart(product, 1, e)}
                 className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold rounded-lg shadow-xs transition-all cursor-pointer"
               >
                 + Add
