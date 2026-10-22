@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { Send, Search, CheckCheck, PanelLeftClose, PanelLeftOpen, X, Image as ImageIcon, ShoppingBag, Plus, ArrowLeft } from 'lucide-react';
+import { subscribeToChat } from '../../lib/chatRealtime';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.4:8000';
 
@@ -9,6 +10,7 @@ export default function SellerChatModule() {
   const [loadingBuyers, setLoadingBuyers] = useState(true);
 
   const [selectedBuyer, setSelectedBuyer] = useState(null);
+  const [sellerId, setSellerId] = useState<number | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [messages, setMessages] = useState([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
@@ -37,6 +39,7 @@ export default function SellerChatModule() {
       .then(res => res.json())
       .then(data => {
         setBuyers(data.data || data.buyers || (Array.isArray(data) ? data : []));
+        if (data.seller_id) setSellerId(data.seller_id);
         setLoadingBuyers(false);
       })
       .catch(error => {
@@ -85,17 +88,35 @@ export default function SellerChatModule() {
   }, [selectedBuyer]);
 
   useEffect(() => {
-    if (!selectedBuyer) return;
-    
-    fetchMessages(true);
+    if (!selectedBuyer || !sellerId) return;
 
-    // បង្កើត Interval ដើម្បី Refresh សាររៀងរាល់ 3 វិនាទី (3000ms)
-    const interval = setInterval(() => {
+    let cancelled = false;
+    let unsubscribe;
+    const initialFetch = window.setTimeout(() => void fetchMessages(true), 0);
+
+    void subscribeToChat({
+      buyerId: selectedBuyer.id,
+      sellerId,
+      participant: 'seller',
+      onMessage: () => void fetchMessages(false),
+    }).then((cleanup) => {
+      if (cancelled) cleanup();
+      else unsubscribe = cleanup;
+    }).catch((error) => {
+      console.error('Seller chat live updates failed to connect:', error);
+    });
+
+    const interval = window.setInterval(() => {
       fetchMessages(false);
-    }, 3000);
+    }, 30000);
 
-    return () => clearInterval(interval);
-  }, [selectedBuyer, fetchMessages]);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(initialFetch);
+      window.clearInterval(interval);
+      unsubscribe?.();
+    };
+  }, [selectedBuyer, sellerId, fetchMessages]);
 
   // ៣. មុខងារផ្ញើសារអត្ថបទធម្មតា
   const handleSendMessage = async (e) => {
@@ -240,7 +261,10 @@ export default function SellerChatModule() {
             buyers.map((buyer) => (
               <div 
                 key={buyer.id}
-                onClick={() => setSelectedBuyer(buyer)}
+                onClick={() => {
+                  setLoadingMessages(true);
+                  setSelectedBuyer(buyer);
+                }}
                 className={`p-4 flex items-center gap-3 cursor-pointer transition-colors ${
                   selectedBuyer?.id === buyer.id ? 'bg-blue-50/80 border-l-4 border-blue-600' : 'hover:bg-slate-100/60'
                 }`}

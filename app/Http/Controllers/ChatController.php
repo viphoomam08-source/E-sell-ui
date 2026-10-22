@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\ChatMessageSent;
 use Illuminate\Http\Request;
 use App\Models\OrderTracking;
 use App\Models\ProductSeller;
 use App\Models\Chat;
+use Throwable;
 
 class ChatController extends Controller
 {
@@ -33,6 +35,7 @@ class ChatController extends Controller
 
         return response()->json([
             "status" => true,
+            "seller_id" => $seller->id,
             "message" => "Buyer list retrieved successfully",
             "data" => $buyers
         ], 200);
@@ -101,6 +104,7 @@ class ChatController extends Controller
             'message' => $messageText,
             'is_read' => false
         ]);
+        $this->broadcastMessage($chat);
 
         return response()->json([
             "status" => true,
@@ -183,11 +187,21 @@ class ChatController extends Controller
             'message' => $messageText,
             'is_read' => false
         ]);
+        $this->broadcastMessage($chat);
 
         return response()->json([
             "status" => true,
             "message" => "Message sent successfully",
             "data" => $chat
         ], 201);
+    }
+
+    private function broadcastMessage(Chat $chat): void
+    {
+        try {
+            event(new ChatMessageSent($chat));
+        } catch (Throwable $exception) {
+            report($exception);
+        }
     }
 }

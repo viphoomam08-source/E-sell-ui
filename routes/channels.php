@@ -19,3 +19,19 @@ Broadcast::channel(
     fn (Seller $seller, string $sellerId): bool => (string) $seller->id === $sellerId,
     ['guards' => ['seller-api']],
 );
+
+Broadcast::channel(
+    'chats.{buyerId}.{sellerId}',
+    function ($user, string $buyerId, string $sellerId): bool {
+        if ($user instanceof Buyer) {
+            return (string) $user->id === $buyerId;
+        }
+
+        if ($user instanceof Seller) {
+            return (string) $user->id === $sellerId;
+        }
+
+        return false;
+    },
+    ['guards' => ['api-buyer', 'seller-api']],
+);

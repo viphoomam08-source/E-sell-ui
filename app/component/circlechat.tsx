@@ -1,52 +1,38 @@
-import React, { useState } from 'react';
-import ChatForm from './chatForm';
-import SellerList from './sellerList'
+'use client';
 
-export default function Circlechat({ unreadCount = 0 }) {
-  const [openForm, setOpenForm] = useState(false);
+import { useState } from 'react';
+import SellerList from './sellerList';
 
-  const handleToggle = () => {
-    setOpenForm(!openForm);
-  };
+export default function Circlechat({ unreadCount = 0 }: { unreadCount?: number }) {
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <div className="fixed bottom-6 right-6 z-[9999]">
-      {/* 1. ប្រអប់ ChatForm នឹងលោតអណ្តែតនៅពីលើប៊ូតុង */}
-      {openForm && (
-        <div className="absolute bottom-16 right-0 mb-2 w-80 sm:w-96 shadow-2xl rounded-2xl animate-in fade-in slide-in-from-bottom-2 duration-200">
+      {isOpen && (
+        <div className="absolute bottom-16 right-0 mb-2 w-80 animate-in overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl duration-200 sm:w-96">
           <SellerList />
         </div>
       )}
 
-      {/* 2. Main Floating Button */}
       <div className="relative flex items-center justify-center">
-        {/* Subtle pulsing background glow */}
-        <div className="absolute w-12 h-12 bg-blue-500/20 rounded-full animate-ping pointer-events-none"></div>
-
+        <div className="pointer-events-none absolute h-12 w-12 animate-ping rounded-full bg-blue-500/25" />
         <button
-          onClick={handleToggle}
-          aria-label="Open Chat"
-          className="relative flex items-center justify-center w-12 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg active:scale-95 transition-all duration-200 cursor-pointer"
+          type="button"
+          onClick={() => setIsOpen((open) => !open)}
+          aria-label={isOpen ? 'Close chat' : 'Open chat'}
+          aria-expanded={isOpen}
+          className="relative flex h-12 w-12 cursor-pointer items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-all duration-200 hover:bg-blue-700 active:scale-95"
         >
-          {/* Chat Icon */}
-          <svg 
-            className="w-5 h-5 text-white" 
-            fill="none" 
-            stroke="currentColor" 
-            viewBox="0 0 24 24" 
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-              strokeWidth="2" 
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
               d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-            ></path>
+            />
           </svg>
-
-          {/* Unread Badge */}
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-white shadow-xs">
+            <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full border border-white bg-red-500 text-[10px] font-bold text-white shadow-xs">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}

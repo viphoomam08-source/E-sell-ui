@@ -17,14 +17,14 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## Live order status updates
+## Live order and chat updates
 
-Signed-in buyers can receive order status notifications from the bell beside the shopping cart in the store navigation. New updates also appear briefly on screen, and the bell keeps the buyer's recent notifications in that browser. Buyer tracking pages receive status changes over Laravel Reverb while the page is open.
+Signed-in buyers can receive order status notifications from the bell beside the shopping cart in the store navigation. New updates also appear briefly on screen, and the bell keeps the buyer's recent notifications in that browser. Buyer tracking pages and open buyer/seller chat conversations receive updates over Laravel Reverb.
 
 Signed-in sellers receive a dashboard bell alert and an on-screen toast as soon as a buyer places an order containing one of their products. The seller must have the dashboard open to receive the live alert; the bell stores recently received alerts in that browser. For local development:
 
 1. Configure the Laravel API `.env` with `BROADCAST_CONNECTION=reverb` and the Reverb app credentials. The API and Reverb server must use the same credentials.
-2. Start Reverb in the API project with `php artisan reverb:start`. The sample configuration uses port `8082` so it does not conflict with the API server or common XAMPP port `8080`.
+2. Start Reverb in the API project with `php artisan reverb:start`. The sample configuration uses port `8082` so it does not conflict with the API server or common XAMPP port `8080`. Chat messages are broadcast on a private channel, so buyers and sellers must be authenticated to receive messages for their conversation.
 3. Copy the API's Reverb app key, host, port, and scheme into the frontend `.env.local` as `NEXT_PUBLIC_REVERB_APP_KEY`, `NEXT_PUBLIC_REVERB_HOST`, `NEXT_PUBLIC_REVERB_PORT`, and `NEXT_PUBLIC_REVERB_SCHEME`. Set `NEXT_PUBLIC_API_URL` to the API's reachable base URL.
 4. Restart the Next.js dev server after changing environment variables. Buyers and sellers must be signed in in that browser to authorize their private live updates; buyer order tracking also refreshes every 15 seconds as a fallback.
 

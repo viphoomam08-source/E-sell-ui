@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import { subscribeToChat } from '../lib/chatRealtime';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.4.52:8000';
 
@@ -25,7 +26,7 @@ export default function SellerList() {
   };
 
   // ១. ទាញយកបញ្ជីហាងដែល Buyer បានទិញទំនិញ
-  const fetchSellers = async () => {
+  const fetchSellers = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/api/takeSeller`, {
         method: 'GET',
@@ -42,6 +43,7 @@ export default function SellerList() {
 
           return {
             id: sellerId,
+            buyerId: item.buyer_id,
             name: sellerName,
             image: sellerPic,
             lastMessage: item.note || 'បានបញ្ជាទិញទំនិញពីហាងនេះ',
@@ -58,11 +60,12 @@ export default function SellerList() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchSellers();
-  }, []);
+    const timer = window.setTimeout(() => void fetchSellers(), 0);
+    return () => window.clearTimeout(timer);
+  }, [fetchSellers]);
 
   // ២. ទាញយកប្រវត្តើសារ (ជាមួយ Auto Refresh រៀងរាល់ 3 វិនាទី)
   const fetchMessages = useCallback(async (isInitial = false) => {
@@ -95,14 +98,33 @@ export default function SellerList() {
 
   useEffect(() => {
     if (!selectedSeller) return;
-    
-    fetchMessages(true);
 
-    const interval = setInterval(() => {
+    let cancelled = false;
+    let unsubscribe: (() => void) | undefined;
+    const initialFetch = window.setTimeout(() => void fetchMessages(true), 0);
+
+    void subscribeToChat({
+      buyerId: selectedSeller.buyerId,
+      sellerId: selectedSeller.id,
+      participant: 'buyer',
+      onMessage: () => void fetchMessages(false),
+    }).then((cleanup) => {
+      if (cancelled) cleanup();
+      else unsubscribe = cleanup;
+    }).catch((error: unknown) => {
+      console.error('Buyer chat live updates failed to connect:', error);
+    });
+
+    const interval = window.setInterval(() => {
       fetchMessages(false);
-    }, 3000);
+    }, 30000);
 
-    return () => clearInterval(interval);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(initialFetch);
+      window.clearInterval(interval);
+      unsubscribe?.();
+    };
   }, [selectedSeller, fetchMessages]);
 
   // ៣. មុខងារ Buyer ផ្ញើសារទៅ Seller
@@ -262,7 +284,10 @@ export default function SellerList() {
             {filteredSellers.map((seller) => (
               <div
                 key={seller.id}
-                onClick={() => setSelectedSeller(seller)}
+                onClick={() => {
+                  setLoadingMessages(true);
+                  setSelectedSeller(seller);
+                }}
                 className="flex items-center gap-3 p-3.5 hover:bg-slate-50 transition cursor-pointer relative"
               >
                 <div className="relative shrink-0">

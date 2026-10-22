@@ -9,6 +9,7 @@ import Banner from '../component/banner';
 import BannerModul from './component/BannerModul';
 import Activity from './component/activity'
 import Overview from './component/overview';
+import DailyPost from './component/DailyPost';
 import AuditLog from './component/audit';
 import Report from './component/Report';
 import SellerChatModule from './component/SellerChatModule';
@@ -173,6 +174,15 @@ export default function App() {
               <div className="flex items-center gap-3"><AlertTriangle className="w-4 h-4" /><span>Audit Logs</span></div>
               {activeModule === 'audit' && <ChevronRight className="w-4 h-4 opacity-70" />}
             </button>
+             <button
+              onClick={() => handleModuleClick('daily')}
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 cursor-pointer ${
+                activeModule === 'daily' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              }`}
+            >
+              <div className="flex items-center gap-3"><AlertTriangle className="w-4 h-4" /><span>Daily Post</span></div>
+              {activeModule === 'daily' && <ChevronRight className="w-4 h-4 opacity-70" />}
+            </button>
           </nav>
         </div>
 
@@ -278,6 +288,7 @@ export default function App() {
             {activeModule === 'chat' && <SellerChatModule />}
             {activeModule === 'reports' && <Report />}
             {activeModule === 'audit' && <AuditLog />}
+            {activeModule==='daily'&& <DailyPost/>}
           </div>
         </main>
 

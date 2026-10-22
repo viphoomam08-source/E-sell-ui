@@ -1,115 +1,236 @@
-import React, { useState, useEffect } from 'react';
-import { Send, X, MessageSquare } from 'lucide-react';
-function Chat({ isOpen = false, onClose, shopId }) {
+'use client';
+
+import { useCallback, useEffect, useState } from 'react';
+import { Send, X } from 'lucide-react';
+import { subscribeToChat } from '../../lib/chatRealtime';
+
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/+$/, '');
+
+function getBuyerToken() {
+  return localStorage.getItem('buyer_token')
+    || localStorage.getItem('access_token')
+    || localStorage.getItem('token')
+    || localStorage.getItem('jwt_token');
+}
+
+function formatMessage(message) {
+  return {
+    id: message.id,
+    sender: message.sender_type === 'buyer' ? 'user' : 'shop',
+    text: message.message,
+    time: message.created_at
+      ? new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      : '',
+  };
+}
+
+export default function Chat({ isOpen = false, onClose, shopId }) {
   const [loading, setLoading] = useState(false);
   const [shopProfile, setShopProfile] = useState(null);
-  const [messages, setMessages] = useState([
-    { id: 1, sender: 'shop', text: 'សួស្ដី! តើអាចឱ្យខ្ញុំជួយអ្វីខ្លះដែរ?' }
-  ]);
+  const [buyerId, setBuyerId] = useState(null);
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
+  const [error, setError] = useState('');
+
   useEffect(() => {
     if (!isOpen || !shopId) return;
 
-    const fetchShopChatDetails = async () => {
+    let cancelled = false;
+    const loadChat = async () => {
+      setLoading(true);
+      setError('');
+
       try {
-        setLoading(true);
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/shop-details/${shopId}`, {
-          headers: { 
-            'Accept': 'application/json',
-          }
-        });
-        const data = await response.json();
-        const fetchedShop = data.seller || data.shop || data;
-        setShopProfile(fetchedShop);
-      } catch (error) {
-        console.error("Error fetching shop profile for chat:", error);
+        const token = getBuyerToken();
+        if (!API_URL || !token) {
+          throw new Error('សូមចូលគណនីអ្នកទិញជាមុនសិន ដើម្បីជជែកជាមួយហាង។');
+        }
+
+        const headers = {
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+        };
+        const [shopResponse, buyerResponse] = await Promise.all([
+          fetch(`${API_URL}/api/shop-details/${shopId}`, { headers: { Accept: 'application/json' } }),
+          fetch(`${API_URL}/api/buyer-acc`, { headers }),
+        ]);
+
+        const shopData = await shopResponse.json();
+        const buyerData = await buyerResponse.json();
+        if (!shopResponse.ok) throw new Error(shopData.message || 'មិនអាចទាញយកព័ត៌មានហាងបានទេ។');
+        if (!buyerResponse.ok || !buyerData.data?.id) {
+          throw new Error(buyerData.message || 'សូមចូលគណនីអ្នកទិញម្ដងទៀត។');
+        }
+
+        if (!cancelled) {
+          setShopProfile(shopData.seller || shopData.shop || shopData.data || shopData);
+          setBuyerId(buyerData.data.id);
+        }
+      } catch (chatError) {
+        console.error('Unable to open buyer chat:', chatError);
+        if (!cancelled) {
+          setError(chatError instanceof Error ? chatError.message : 'មិនអាចបើកការជជែកបានទេ។');
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
-    
-    fetchShopChatDetails();
+
+    void loadChat();
+    return () => {
+      cancelled = true;
+    };
   }, [isOpen, shopId]);
 
-  if (!isOpen) return null;
+  const fetchMessages = useCallback(async () => {
+    if (!buyerId || !shopId) return;
 
-  const handleSend = (e) => {
-    e.preventDefault();
-    if (!input.trim()) return;
-    setMessages([...messages, { id: Date.now(), sender: 'user', text: input }]);
-    setInput('');
+    try {
+      const response = await fetch(`${API_URL}/api/buyer/chat-messages/${shopId}`, {
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${getBuyerToken()}`,
+        },
+        cache: 'no-store',
+      });
+      const data = await response.json();
+      if (!response.ok || !data.status) {
+        throw new Error(data.message || 'មិនអាចទាញយកសារបានទេ។');
+      }
+      setMessages((data.data || []).map(formatMessage));
+      setError('');
+    } catch (chatError) {
+      console.error('Unable to refresh buyer chat:', chatError);
+      setError(chatError instanceof Error ? chatError.message : 'មិនអាចទាញយកសារបានទេ។');
+    }
+  }, [buyerId, shopId]);
+
+  useEffect(() => {
+    if (!isOpen || !buyerId || !shopId) return;
+
+    let cancelled = false;
+    let unsubscribe;
+    const initialFetch = window.setTimeout(() => void fetchMessages(), 0);
+
+    void subscribeToChat({
+      buyerId,
+      sellerId: shopId,
+      participant: 'buyer',
+      onMessage: () => void fetchMessages(),
+    }).then((cleanup) => {
+      if (cancelled) cleanup();
+      else unsubscribe = cleanup;
+    }).catch((chatError) => {
+      console.error('Shop chat live updates failed to connect:', chatError);
+    });
+
+    const fallbackTimer = window.setInterval(() => void fetchMessages(), 30000);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(initialFetch);
+      window.clearInterval(fallbackTimer);
+      unsubscribe?.();
+    };
+  }, [buyerId, fetchMessages, isOpen, shopId]);
+
+  const handleSend = async (event) => {
+    event.preventDefault();
+    const message = input.trim();
+    if (!message || !shopId) return;
+
+    try {
+      const response = await fetch(`${API_URL}/api/buyer/send-message`, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${getBuyerToken()}`,
+        },
+        body: JSON.stringify({ seller_id: shopId, message }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.status) {
+        throw new Error(data.message || 'មិនអាចផ្ញើសារបានទេ។');
+      }
+
+      setInput('');
+      await fetchMessages();
+    } catch (chatError) {
+      console.error('Unable to send buyer chat message:', chatError);
+      setError(chatError instanceof Error ? chatError.message : 'មិនអាចផ្ញើសារបានទេ។');
+    }
   };
+
+  if (!isOpen) return null;
 
   const shopName = shopProfile?.seller_name || shopProfile?.name || 'ហាងទំនិញ';
   const profileImage = shopProfile?.profile_pic || shopProfile?.image || shopProfile?.avatar;
 
   return (
-    <div className="fixed bottom-5 right-5 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 flex flex-col overflow-hidden z-50 font-['Kantumruy_Pro'] animate-in fade-in slide-in-from-bottom-4 duration-200">
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-3.5 flex justify-between items-center shadow-md">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-white/20 overflow-hidden flex items-center justify-center font-bold text-sm border-2 border-white/40 flex-shrink-0">
+    <div className="fixed bottom-5 right-5 z-50 flex h-[500px] w-80 flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white font-['Kantumruy_Pro'] shadow-2xl sm:w-96">
+      <div className="flex items-center justify-between bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3.5 text-white shadow-md">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-white/40 bg-white/20 text-sm font-bold">
             {profileImage ? (
-              <img 
-                src={`${process.env.NEXT_PUBLIC_API_URL}/storage/${profileImage}`}
-                alt={shopName} 
-                className="w-full h-full object-cover"
-              />
+              <img src={`${API_URL}/storage/${profileImage}`} alt={shopName} className="h-full w-full object-cover" />
             ) : (
-              <span>{shopName.charAt(0).toUpperCase()}</span>
+              shopName.charAt(0).toUpperCase()
             )}
           </div>
-          <div>
-            <h3 className="font-bold text-sm truncate max-w-[170px] font-['Kantumruy_Pro']">{shopName}</h3>
-            <p className="text-[10px] text-blue-100 font-['Kantumruy_Pro']">ឆ្លើយតបយ៉ាងលឿន</p>
+          <div className="min-w-0">
+            <h3 className="truncate text-sm font-bold">{shopName}</h3>
+            <p className="text-[10px] text-blue-100">ជជែកជាមួយហាង</p>
           </div>
         </div>
-
         {onClose && (
-          <button 
+          <button
+            type="button"
             onClick={onClose}
-            className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer flex-shrink-0"
+            aria-label="Close chat"
+            className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
           >
-            <X className="w-4 h-4" />
+            <X className="h-4 w-4" />
           </button>
         )}
       </div>
 
-      <div className="p-4 flex-1 h-72 overflow-y-auto bg-gray-50 flex flex-col gap-3 font-['Kantumruy_Pro']">
-        {messages.map((msg) => (
-          <div 
-            key={msg.id} 
-            className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-          >
-            <div className={`max-w-[75%] px-3.5 py-2.5 rounded-2xl text-xs leading-relaxed font-['Kantumruy_Pro'] ${
-              msg.sender === 'user' 
-                ? 'bg-blue-600 text-white rounded-br-none shadow-sm' 
-                : 'bg-white text-gray-800 rounded-bl-none border border-gray-100 shadow-sm'
+      <div className="flex-1 space-y-3 overflow-y-auto bg-gray-50 p-4">
+        {loading && <p className="text-center text-xs text-slate-500">កំពុងភ្ជាប់ទៅហាង...</p>}
+        {error && <p role="alert" className="rounded-lg bg-rose-50 p-2 text-xs text-rose-700">{error}</p>}
+        {!loading && !error && messages.length === 0 && (
+          <p className="text-center text-xs text-slate-500">ផ្ញើសារដំបូងទៅកាន់ហាងនេះ។</p>
+        )}
+        {messages.map((message) => (
+          <div key={message.id} className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div className={`max-w-[80%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed ${
+              message.sender === 'user'
+                ? 'rounded-br-none bg-blue-600 text-white shadow-sm'
+                : 'rounded-bl-none border border-gray-100 bg-white text-gray-800 shadow-sm'
             }`}>
-              {msg.text}
+              {message.text}
+              {message.time && <span className="mt-1 block text-[9px] opacity-70">{message.time}</span>}
             </div>
           </div>
         ))}
       </div>
 
-      {/* Input Footer */}
-      <form onSubmit={handleSend} className="p-3 bg-white border-t border-gray-100 flex items-center gap-2">
-        <input 
-          type="text" 
+      <form onSubmit={handleSend} className="flex items-center gap-2 border-t border-gray-100 bg-white p-3">
+        <input
+          type="text"
           value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="សរសេរសារ..." 
-          className="flex-1 px-4 py-2 text-xs bg-gray-100 border border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:outline-none transition-all text-gray-800 font-['Kantumruy_Pro']"
+          onChange={(event) => setInput(event.target.value)}
+          placeholder="សរសេរសារ..."
+          className="flex-1 rounded-xl border border-transparent bg-gray-100 px-4 py-2 text-xs text-gray-800 transition-all focus:border-blue-500 focus:bg-white focus:outline-none"
         />
-        <button 
+        <button
           type="submit"
-          className="w-9 h-9 rounded-xl bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-md transition-all active:scale-95 cursor-pointer flex-shrink-0"
+          disabled={!input.trim() || !buyerId}
+          aria-label="Send message"
+          className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-xl bg-blue-600 text-white shadow-md transition-all hover:bg-blue-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <Send className="w-4 h-4" />
+          <Send className="h-4 w-4" />
         </button>
       </form>
-      
     </div>
   );
 }
-
-export default Chat;
