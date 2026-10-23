@@ -178,11 +178,7 @@ export default function Search() {
           <div className="flex items-center gap-3">
             <Link href="/" className="font-bold text-lg sm:text-xl flex items-center gap-2 group">
               <img src={eLogo.src} alt="Logo" className="w-12 h-12 sm:w-16 sm:h-16 object-contain transform group-hover:scale-105 transition-transform" />
-              <h1 className="text-xl sm:text-2xl tracking-tight">
-                <span className="text-blue-600 font-extrabold">E</span>
-                <span className="text-slate-400 font-light">-</span>
-                <span className="text-yellow-500 font-extrabold">Sell</span>
-              </h1>
+             
             </Link>
 
             {/* 👋 បង្ហាញពាក្យសួស្តី និងឈ្មោះ User ដោយស្វ័យប្រវត្តិពេល Login រួច */}
