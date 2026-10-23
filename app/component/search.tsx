@@ -207,9 +207,7 @@ export default function Search() {
           </div>
 
           <div className="flex items-center space-x-2 md:hidden">
-            <div className="flex items-center justify-center w-9 h-9 rounded-full bg-slate-100 text-slate-600 font-medium border border-slate-200 text-sm hover:bg-slate-200 transition-colors shadow-2xs">
-              <ShoppingCart className="w-4 h-4 text-slate-700" />
-            </div>
+           
             
             {user ? (
               <div className="relative" ref={dropdownRef}>
