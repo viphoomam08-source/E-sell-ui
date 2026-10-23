@@ -1,4 +1,5 @@
 'use client';
+
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { Star, MapPin, Clock, Bike, Plus, ShieldCheck, MessageCircle } from 'lucide-react';
@@ -15,7 +16,6 @@ export default function ShopView() {
   const [categories, setCategories] = useState([]); 
   const [loading, setLoading] = useState(true);
   
-  // activeTab៖ អាចជា 'All', 'ABOUT_SHOP', ឬឈ្មោះ Category
   const [activeTab, setActiveTab] = useState('All');
   const [isChatOpen, setIsChatOpen] = useState(false);
 
@@ -33,7 +33,8 @@ export default function ShopView() {
         });
         const data = await response.json();
 
-        const fetchedShop = data.seller || data.shop || data;
+        // 🔍 កែសម្រួលការចាប់យក Object ឱ្យទូលំទូលាយ
+        const fetchedShop = data.shop || data.seller || data.data || data;
         const fetchedProducts = data.products || data.product_sellers || data.menu || [];
 
         setShop(fetchedShop);
@@ -67,9 +68,13 @@ export default function ShopView() {
     );
   }
 
-  const shopName = shop?.seller_name || 'ហាងទំនិញ';
-  const profileImage = shop?.profile_pic;
-  const backgroundImage = shop?.Image;
+  // 🌟 ទាញយកទិន្នន័យហាងមកប្រើប្រាស់ត្រឹមត្រូវ (អានចេញពី Model Accessor ដែលមានស្រាប់)
+  const shopData = shop?.shop || shop?.seller || shop || {};
+  const shopName = shopData.seller_name || shopData.name || shopData.username || 'ហាងទំនិញ';
+  
+  // ប្រើប្រាស់ URL ពេញលេញដែលបានបង្កើតពី Laravel Model Accessor ($appends)
+  const profileImage = shopData.profile_pic_url || (shopData.profile_pic ? `${process.env.NEXT_PUBLIC_API_URL}/storage/${shopData.profile_pic}` : null);
+  const backgroundImage = shopData.background_image_url || (shopData.Image ? `${process.env.NEXT_PUBLIC_API_URL}/storage/${shopData.Image}` : null);
 
   const filteredProducts = activeTab === 'All' 
     ? products 
@@ -86,7 +91,7 @@ export default function ShopView() {
         <div className="h-48 sm:h-64 w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 relative overflow-hidden">
           {backgroundImage ? (
             <img 
-               src={`${process.env.NEXT_PUBLIC_API_URL}/storage/${backgroundImage}`}
+               src={backgroundImage}
                alt="Store Cover" 
                className="w-full h-full object-cover"
             />
@@ -103,7 +108,7 @@ export default function ShopView() {
             <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full border-4 border-white bg-blue-600 shadow-xl overflow-hidden flex-shrink-0 flex items-center justify-center text-white font-bold text-3xl z-10">
               {profileImage ? (
                 <img 
-                  src={`${process.env.NEXT_PUBLIC_API_URL}/storage/${profileImage}`}
+                  src={profileImage}
                   alt={shopName} 
                   className="w-full h-full object-cover"
                 />
@@ -117,7 +122,7 @@ export default function ShopView() {
                 <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">{shopName}</h1>
                 <ShieldCheck className="w-6 h-6 text-blue-600" />
               </div>
-              <p className="text-sm text-gray-600 mt-1 font-medium">{shop?.decribe || 'Fast Food & Subs • Open Now'}</p>
+              <p className="text-sm text-gray-600 mt-1 font-medium">{shopData?.decribe || shopData?.description || 'Fast Food & Subs • Open Now'}</p>
               
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 mt-3 text-xs sm:text-sm text-gray-600">
                 <span className="flex items-center gap-1.5 bg-amber-50 text-amber-700 px-3 py-1.5 rounded-lg font-semibold shadow-sm border border-amber-100">
@@ -128,7 +133,6 @@ export default function ShopView() {
                   <MapPin className="w-4 h-4 text-blue-500" /> គីឡូម៉ែត្រ
                 </span>
 
-                {/* 🔵 ចុចត្រង់នេះដើម្បីដូរទៅបង្ហាញ About Shop Dynamic */}
                 <button 
                   onClick={() => setActiveTab('ABOUT_SHOP')}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all cursor-pointer font-medium ${
@@ -148,7 +152,6 @@ export default function ShopView() {
                   <Bike className="w-4 h-4 text-blue-500" /> $3.28
                 </span>
 
-                {/* Chat Trigger Button */}
                 <button 
                   onClick={() => setIsChatOpen(true)}
                   className="flex items-center gap-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200 font-semibold transition-all cursor-pointer shadow-sm"
@@ -174,7 +177,6 @@ export default function ShopView() {
       <div className="sticky top-0 bg-white/90 backdrop-blur-md shadow-sm z-30 py-3">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center gap-2 overflow-x-auto no-scrollbar">
           
-          {/* Categories Buttons */}
           {categories.map((cat, index) => (
             <button
               key={index}
@@ -189,7 +191,6 @@ export default function ShopView() {
             </button>
           ))}
 
-          {/* About Shop Tab Button ន្ថែមក្នុង Sticky Menu */}
           <button
             onClick={() => setActiveTab('ABOUT_SHOP')}
             className={`px-5 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all shadow-sm ${
@@ -204,20 +205,18 @@ export default function ShopView() {
         </div>
       </div>
 
-      {/* 4. Dynamic Content Area (ផ្លាស់ប្តូរក្នុងកន្លែងតែមួយ) */}
+      {/* 4. Dynamic Content Area */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 mt-8">
         
-        {/* ប្រសិនបើ activeTab === 'ABOUT_SHOP' វានឹងបង្ហាញ <AboutShop/> ក្នុងកន្លែងនេះ */}
         {activeTab === 'ABOUT_SHOP' ? (
           <div>
             <h2 className="text-xl font-bold text-gray-900 mb-5 flex items-center gap-2">
               <span className="w-2 h-6 bg-blue-600 rounded-full"></span>
               សកម្មភាព និងព័ត៌មានហាង (About Shop)
             </h2>
-            <AboutShop shopData={shop} />
+            <AboutShop shopData={shopData} />
           </div>
         ) : (
-          /* ប្រសិនបើជ្រើសរើស Category ផ្សេងៗ វានឹងបង្ហាញ Menu ទំនិញដូចធម្មតា */
           <div>
             <h2 className="text-xl font-bold text-gray-900 mb-5 flex items-center gap-2">
               <span className="w-2 h-6 bg-blue-600 rounded-full"></span>
@@ -229,7 +228,7 @@ export default function ShopView() {
                 filteredProducts.map((item) => {
                   const productName = item.product_name || item.name;
                   const productPrice = Number(item.product_price || item.price || 0);
-                  const productImage = item.image;
+                  const productImage = item.image || item.product_image;
 
                   return (
                     <div 
@@ -253,7 +252,7 @@ export default function ShopView() {
                           <h3 className="text-base font-bold text-gray-900 truncate group-hover:text-blue-600 transition-colors">
                             {productName}
                           </h3>
-                          <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{item.product_description || 'គ្មានការពិពណ៌នា'}</p>
+                          <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{item.product_description || item.description || 'គ្មានការពិពណ៌នា'}</p>
                           <p className="text-xs text-gray-400 mt-0.5 line-clamp-1"> Brand: {item.brand || 'គ្មានម៉ាក'}</p>
                           <div className="mt-2 flex items-baseline gap-2">
                             <span className="text-blue-600 font-extrabold text-lg">
@@ -286,7 +285,6 @@ export default function ShopView() {
 
       </div>
 
-      {/* Embedded Chat Component */}
       <Chat 
         isOpen={isChatOpen} 
         onClose={() => setIsChatOpen(false)} 

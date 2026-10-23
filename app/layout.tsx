@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "./component/navbar";
 import { CartProvider } from "./component/CartContext";
+import Search from "./component/search";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -32,9 +33,13 @@ export default function RootLayout({
       className={`${inter.className} ${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        {/* 🛒 ត្រូវយក CartProvider មកគ្របដណ្តប់ Navbar និង children បែបនេះ */}
         <CartProvider>
-          <Navbar />
+          {/* 🌟 ដាក់ Search និង Navbar ឱ្យស្ថិតក្នុង Wrapper  একটាតែមួយ ដើម្បីឱ្យវាស្អិតជាប់គ្នា (Sticky Together) */}
+          <div className="sticky top-0 z-50 w-full shadow-md">
+            <Search />
+            <Navbar />
+          </div>
+          
           <main className="flex-1">{children}</main>
         </CartProvider>
       </body>

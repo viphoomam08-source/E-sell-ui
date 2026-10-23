@@ -12,7 +12,7 @@ import Footer from './component/Footer';
 import Dicount from './component/dicount';
 import ShortAnounce from './component/shortAnounce'
 import Progress from './component/progress'
-
+import Buyer_name from './component/buyer_name';
 import BannerPopup from "./component/bannerPopup";
 import VideoReview from "./component/videoReview";
 import LocationPopup from "./dashboard/component/modal/tracklocation";
@@ -34,12 +34,13 @@ export default function Home() {
 
   return (
     <div className="w-full">
-      <Search />
 <ShortAnounce />
             <div className="mx-auto w-full max-w-5xl px-4 py-4">
+              
               <Progress />
             </div>
             <Banner />
+
       <VideoReview/>
       <Dicount/>
 
@@ -54,6 +55,8 @@ export default function Home() {
       <DiscountDisplay/>
     <Circlechat/>
       <Footer/>
+                              
+
     </div>
   );
 }

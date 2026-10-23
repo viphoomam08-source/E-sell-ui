@@ -1,29 +1,42 @@
+'use client';
 import React, { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation'; // 👈 ទាញយក ID ពី URL ស្រាប់ (មិនបាច់ពឹងផ្អែកលើ Buyer ដាក់ ID ទេ។)
 import { ShieldCheck, Heart, MessageCircle, Share2, MapPin, Clock, Phone, Info, Truck, X } from 'lucide-react';
 
 function AboutShop({ shopData }) {
+  const params = useParams(); // ទទួលបាន { id: "..." } ពី URL route [id]
   const [activeTab, setActiveTab] = useState('posts');
   const [sellerPosts, setSellerPosts] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(null); // State សម្រាប់គ្រប់គ្រងរូបភាពពេលចុចពង្រីក
+  const [selectedImage, setSelectedImage] = useState(null);
 
   const shopInfo = {
-    name: shopData?.seller_name || "TechStore Cambodia",
-    description: shopData?.decribe || "ហាងលក់ឧបករណ៍អេឡិចត្រូនិក និងគ្រឿងបន្លាស់កុំព្យូទ័រគុណភាពខ្ពស់ ធានាត្រឹមត្រូវ។",
-    avatar: shopData?.profile_pic 
-      ? `${process.env.NEXT_PUBLIC_API_URL}/storage/${shopData.profile_pic}` 
+    name: shopData?.seller_name || shopData?.name || "TechStore Cambodia",
+    description: shopData?.decribe || shopData?.description || "ហាងលក់ឧបករណ៍អេឡិចត្រូនិក និងគ្រឿងបន្លាស់កុំព្យូទ័រគុណភាពខ្ពស់ ធានាត្រឹមត្រូវ។",
+    avatar: shopData?.profile_pic || shopData?.Image
+      ? `${process.env.NEXT_PUBLIC_API_URL}/storage/${shopData.profile_pic || shopData.Image}` 
       : "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200",
     phone: shopData?.phone || "012 345 678 / 098 765 432",
     location: shopData?.address || "ភ្នំពេញ, កម្ពុជា",
     hours: "08:00 AM - 08:00 PM (រៀងរាល់ថ្ងៃ)",
   };
 
-  // 1. Fetch Posts from Laravel Backend API (/api/show_post)
   useEffect(() => {
     const fetchPosts = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/show_post`, {
+        
+        // ទាញយក ID ដោយស្វ័យប្រវត្តិពី shopData ឬ URL params.id 
+        const currentSellerId = shopData?.id || shopData?.seller_id || params?.id;
+        
+        console.log("Fetching posts for Seller ID:", currentSellerId);
+
+        // បើមាន ID ផ្ញើ query parameter ទៅជាមួយ បើគ្មានទេហៅ API ធម្មតា
+        const apiUrl = currentSellerId 
+          ? `${process.env.NEXT_PUBLIC_API_URL}/api/show_post?seller_id=${currentSellerId}`
+          : `${process.env.NEXT_PUBLIC_API_URL}/api/show_post`;
+
+        const response = await fetch(apiUrl, {
           headers: {
             'Accept': 'application/json',
           }
@@ -34,13 +47,16 @@ function AboutShop({ shopData }) {
         setSellerPosts(postsList);
       } catch (error) {
         console.error("Error fetching posts:", error);
+        setSellerPosts([]);
       } finally {
         setLoading(false);
       }
     };
 
     fetchPosts();
-  }, []);
+  }, [shopData, params]);
+
+  const postsList = Array.isArray(sellerPosts) ? sellerPosts : (sellerPosts?.data || []);
 
   return (
     <div className="w-full space-y-6 font-['Kantumruy_Pro'] relative">
@@ -69,17 +85,21 @@ function AboutShop({ shopData }) {
           ព័ត៌មានហាងលម្អិត
         </button>
       </div>
-
-      {/* 1. សកម្មភាព & ការផុស (Full Width 100%) */}
+      {/* 1. សកម្មភាព & ការផុស */}
       {activeTab === 'posts' && (
         <div className="w-full space-y-6">
           {loading ? (
             <div className="text-center py-10 text-gray-400 text-sm">កំពុងទាញយកទិន្នន័យ...</div>
-          ) : sellerPosts.length === 0 ? (
-            <div className="text-center py-10 text-gray-400 text-sm bg-white rounded-2xl border border-gray-200/80">មិនទាន់មានការផុសនៅឡើយទេ</div>
+          ) : postsList.length === 0 ? (
+            <div className="text-center py-10 text-gray-400 text-sm bg-white rounded-2xl border border-gray-200/80">
+              មិនទាន់មានការផុសនៅឡើយទេ
+            </div>
           ) : (
-            sellerPosts.map((post) => {
+            postsList.map((post) => {
               const postImgUrl = post.pic ? `${process.env.NEXT_PUBLIC_API_URL}/storage/${post.pic}` : post.image;
+              
+              // 👈 ឆែកមើល Text គ្រប់ Field ដែលអាចទៅរួច ដើម្បីធានាថាចេញអត្ថបទមកជាមួយ
+              const postText = post.text || post.Text || post.content || post.description || '';
               
               return (
                 <div key={post.id} className="w-full bg-white border border-gray-200/80 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200">
@@ -100,11 +120,13 @@ function AboutShop({ shopData }) {
                   </div>
 
                   {/* Text Content */}
-                  <p className="p-4 sm:p-5 text-sm sm:text-base text-gray-800 leading-relaxed whitespace-pre-line">
-                    {post.Text || post.content}
-                  </p>
+                  {postText && (
+                    <p className="p-4 sm:p-5 text-sm sm:text-base text-gray-800 leading-relaxed whitespace-pre-line">
+                      {postText}
+                    </p>
+                  )}
 
-                  {/* Image Section - ចុចលើរូបដើម្បីពង្រីក (Click to Zoom) */}
+                  {/* Image Section */}
                   {postImgUrl && (
                     <div 
                       onClick={() => setSelectedImage(postImgUrl)}
@@ -141,7 +163,7 @@ function AboutShop({ shopData }) {
         </div>
       )}
 
-      {/* 2. ព័ត៌មានហាងលម្អិត (Full Width 100%) */}
+      {/* 2. ព័ត៌មានហាងលម្អិត */}
       {activeTab === 'info' && (
         <div className="w-full bg-white rounded-2xl p-6 sm:p-8 border border-gray-200/80 shadow-sm space-y-6">
           <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
@@ -183,7 +205,7 @@ function AboutShop({ shopData }) {
           </div>
 
           <div>
-            <p className="text-xs text-gray-400 font-medium mb-1.5">ការពិពណ៌នាបន្ថែម</p>
+            <p className="text-sxs text-gray-400 font-medium mb-1.5">ការពិពណ៌នាបន្ថែម</p>
             <p className="text-sm text-gray-700 leading-relaxed bg-gray-50/80 p-4 rounded-xl border border-gray-100">
               {shopInfo.description}
             </p>
@@ -191,7 +213,7 @@ function AboutShop({ shopData }) {
         </div>
       )}
 
-      {/* 🔍 IMAGE ZOOM MODAL (Lightbox) */}
+      {/* 🔍 IMAGE ZOOM MODAL */}
       {selectedImage && (
         <div 
           onClick={() => setSelectedImage(null)}
