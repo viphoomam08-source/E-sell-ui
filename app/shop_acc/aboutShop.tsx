@@ -1,14 +1,47 @@
 'use client';
+
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation'; // 👈 ទាញយក ID ពី URL ស្រាប់ (មិនបាច់ពឹងផ្អែកលើ Buyer ដាក់ ID ទេ។)
+import { useParams } from 'next/navigation';
 import { ShieldCheck, Heart, MessageCircle, Share2, MapPin, Clock, Phone, Info, Truck, X } from 'lucide-react';
 
-function AboutShop({ shopData }) {
-  const params = useParams(); // ទទួលបាន { id: "..." } ពី URL route [id]
-  const [activeTab, setActiveTab] = useState('posts');
-  const [sellerPosts, setSellerPosts] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(null);
+interface ShopData {
+  id?: string | number;
+  seller_id?: string | number;
+  seller_name?: string;
+  name?: string;
+  decribe?: string;
+  description?: string;
+  profile_pic?: string;
+  Image?: string;
+  phone?: string;
+  address?: string;
+}
+
+interface Post {
+  id: string | number;
+  pic?: string;
+  image?: string;
+  photo?: string;
+  img?: string;
+  text?: string;
+  Text?: string;
+  content?: string;
+  description?: string;
+  created_at?: string;
+  likes?: number;
+  comments?: number;
+}
+
+interface AboutShopProps {
+  shopData?: ShopData;
+}
+
+export default function AboutShop({ shopData }: AboutShopProps) {
+  const params = useParams();
+  const [activeTab, setActiveTab] = useState<'posts' | 'info'>('posts');
+  const [sellerPosts, setSellerPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const shopInfo = {
     name: shopData?.seller_name || shopData?.name || "TechStore Cambodia",
@@ -26,12 +59,8 @@ function AboutShop({ shopData }) {
       try {
         setLoading(true);
         
-        // ទាញយក ID ដោយស្វ័យប្រវត្តិពី shopData ឬ URL params.id 
-        const currentSellerId = shopData?.id || shopData?.seller_id || params?.id;
+        const currentSellerId = shopData?.id || shopData?.seller_id || (params?.id as string | undefined);
         
-        console.log("Fetching posts for Seller ID:", currentSellerId);
-
-        // បើមាន ID ផ្ញើ query parameter ទៅជាមួយ បើគ្មានទេហៅ API ធម្មតា
         const apiUrl = currentSellerId 
           ? `${process.env.NEXT_PUBLIC_API_URL}/api/show_post?seller_id=${currentSellerId}`
           : `${process.env.NEXT_PUBLIC_API_URL}/api/show_post`;
@@ -41,7 +70,7 @@ function AboutShop({ shopData }) {
             'Accept': 'application/json',
           }
         });
-        const data = await response.json();
+        const data = (await response.json()) as any;
         
         const postsList = Array.isArray(data) ? data : (data.data || data.posts || []);
         setSellerPosts(postsList);
@@ -56,7 +85,7 @@ function AboutShop({ shopData }) {
     fetchPosts();
   }, [shopData, params]);
 
-  const postsList = Array.isArray(sellerPosts) ? sellerPosts : (sellerPosts?.data || []);
+  const postsList = Array.isArray(sellerPosts) ? sellerPosts : [];
 
   return (
     <div className="w-full space-y-6 font-['Kantumruy_Pro'] relative">
@@ -85,6 +114,7 @@ function AboutShop({ shopData }) {
           ព័ត៌មានហាងលម្អិត
         </button>
       </div>
+
       {/* 1. សកម្មភាព & ការផុស */}
       {activeTab === 'posts' && (
         <div className="w-full space-y-6">
@@ -96,9 +126,12 @@ function AboutShop({ shopData }) {
             </div>
           ) : (
             postsList.map((post) => {
-              const postImgUrl = post.pic ? `${process.env.NEXT_PUBLIC_API_URL}/storage/${post.pic}` : post.image;
+              // 🛠️ រុករករូបភាពពីគ្រប់ Field ដែលអាចទៅរួច និងភ្ជាប់ជាមួយ Storage URL ស្វ័យប្រវត្តិ
+              const rawImg = post.pic || post.image || post.photo || post.img;
+              const postImgUrl = rawImg 
+                ? (rawImg.startsWith('http') ? rawImg : `${process.env.NEXT_PUBLIC_API_URL}/storage/${rawImg}`)
+                : null;
               
-              // 👈 ឆែកមើល Text គ្រប់ Field ដែលអាចទៅរួច ដើម្បីធានាថាចេញអត្ថបទមកជាមួយ
               const postText = post.text || post.Text || post.content || post.description || '';
               
               return (
@@ -205,7 +238,7 @@ function AboutShop({ shopData }) {
           </div>
 
           <div>
-            <p className="text-sxs text-gray-400 font-medium mb-1.5">ការពិពណ៌នាបន្ថែម</p>
+            <p className="text-xs text-gray-400 font-medium mb-1.5">ការពិពណ៌នាបន្ថែម</p>
             <p className="text-sm text-gray-700 leading-relaxed bg-gray-50/80 p-4 rounded-xl border border-gray-100">
               {shopInfo.description}
             </p>
@@ -238,5 +271,3 @@ function AboutShop({ shopData }) {
     </div>
   );
 }
-
-export default AboutShop;
