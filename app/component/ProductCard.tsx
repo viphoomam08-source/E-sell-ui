@@ -50,7 +50,7 @@ export default function ProductCard({ selectedSubId }) {
       if (!isBackground) setLoading(false);
     } catch (err) {
       if (!isBackground) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch products');
+        setError('cant show product');
         setLoading(false);
       }
     }
@@ -228,7 +228,6 @@ export default function ProductCard({ selectedSubId }) {
           isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
         } ${isSliderItem ? 'flex-shrink-0' : 'w-full'}`}
       >
-        {/* Main Product Card */}
         <Link 
           href={`/product/${product.id}`}
           className="group bg-white rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-xl hover:border-blue-400/60 transition-all duration-300 flex flex-col overflow-hidden relative cursor-pointer transform hover:-translate-y-1.5 w-44 sm:w-56"
@@ -300,7 +299,6 @@ export default function ProductCard({ selectedSubId }) {
           </div>
         </Link>
 
-        {/* Instantly Displays Form on Hover Side Slide */}
         <div 
           className={`overflow-hidden transition-all duration-300 ease-out flex items-center ${
             isThisHovered ? 'w-56 opacity-100 ml-2.5' : 'w-0 opacity-0 ml-0'

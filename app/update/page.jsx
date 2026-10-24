@@ -16,7 +16,7 @@ export default function WhatsNewPage() {
 
   // 📄 Pagination State
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 3;
+  const itemsPerPage = 3; 
 
   const API = process.env.NEXT_PUBLIC_API_URL;
 

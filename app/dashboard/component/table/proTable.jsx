@@ -6,33 +6,24 @@ import AddProductModal from '../modal/AddProductModal';
 import UpdateForm from '../modal/updateForm';
 
 export default function ProTable({ searchTerm }) {
-    // ===========================
-    // 1. STATE MANAGEMENT
-    // ===========================
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [isOpen, setIsOpen] = useState(true);
     
-    // Expansion & Modal States
     const [expandedRowId, setExpandedRowId] = useState(null);
     const [collapsedVariants, setCollapsedVariants] = useState({}); 
     const [selectUpdate, setSelectUpdate] = useState(null);
     const [selectedProductId, setSelectedProductId] = useState(null);
 
-    // Pagination States
     const [currentPage, setCurrentPage] = useState(1);
     const [lastPage, setLastPage] = useState(1);
     const [totalProducts, setTotalProducts] = useState(0);
 
-    // Authentication Token
-    const token = typeof window !== 'undefined' 
-        ? (localStorage.getItem('access_token') || localStorage.getItem('token') || localStorage.getItem('jwt_token')) 
-        : '';
+    const token =
+         (localStorage.getItem('access_token') || localStorage.getItem('token') || localStorage.getItem('jwt_token')) 
+        ;
 
-    // ===========================
-    // 2. API FETCHING LOGIC
-    // ===========================
     const fetchProducts = async (isBackground = false) => {
         if (!isBackground) setLoading(true);
         setError('');
@@ -48,7 +39,6 @@ export default function ProTable({ searchTerm }) {
                 }
             };
 
-            // 🔍 Check if searching (POST API) or listing (GET API)
             if (searchTerm && searchTerm.trim() !== '') {
                 endpoint = `${baseUrl}/api/search-product?page=${currentPage}`;
                 options.method = 'POST';
@@ -61,31 +51,13 @@ export default function ProTable({ searchTerm }) {
             const response = await fetch(endpoint, options);
             
             if (!response.ok) {
-                if (response.status === 401) throw new Error('ការផ្ទៀងផ្ទាត់បរាជ័យ (Unauthorized)៖ សូម Login ម្ដងទៀត។');
+                if (response.status === 401) throw new Error(' សូម Login ម្ដងទៀត។');
                 throw new Error('មិនអាចទាញយកទិន្នន័យបានទេ។');
             }
 
-            const data = await response.json();
-            
-            // 🛡️ Safe array extraction & Laravel Pagination Metadata mapping
-            let extracted = [];
-            if (data?.data?.data && Array.isArray(data.data.data)) {
-                extracted = data.data.data;
-                setCurrentPage(data.data.current_page || 1);
-                setLastPage(data.data.last_page || 1);
-                setTotalProducts(data.data.total || 0);
-            } else if (data?.data && Array.isArray(data.data)) {
-                extracted = data.data;
-                setTotalProducts(data.total || data.data.length);
-            } else if (data?.product && Array.isArray(data.product)) {
-                extracted = data.product;
-                setTotalProducts(data.total || data.product.length);
-            } else if (Array.isArray(data)) {
-                extracted = data;
-                setTotalProducts(data.length);
-            }
+            const json = await response.json();
+            parseAndSetProductsData(json);
 
-            setProducts(extracted);
         } catch (err) {
             if (!isBackground) {
                 setError(err.message || 'មិនអាចទាញយកទិន្នន័យផលិតផលបានទេ។');
@@ -95,21 +67,40 @@ export default function ProTable({ searchTerm }) {
         }
     };
 
-    // ===========================
-    // 3. EFFECTS & HANDLERS
-    // ===========================
+    const parseAndSetProductsData = (data) => {
+        let extracted = [];
+
+        if (data?.data?.data && Array.isArray(data.data.data)) {
+            extracted = data.data.data;
+            setCurrentPage(data.data.current_page || 1);
+            setLastPage(data.data.last_page || 1);
+            setTotalProducts(data.data.total || 0);
+        } else if (data?.data && Array.isArray(data.data)) {
+            extracted = data.data;
+            setTotalProducts(data.total || data.data.length);
+        } else if (data?.product && Array.isArray(data.product)) {
+            extracted = data.product;
+            setTotalProducts(data.total || data.product.length);
+        } else if (Array.isArray(data)) {
+            extracted = data;
+            setTotalProducts(data.length);
+        }
+
+        setProducts(extracted);
+    };
+
     useEffect(() => {
-        const delayDebounceFn = setTimeout(() => fetchProducts(false), 300);
-        const intervalId = setInterval(() => fetchProducts(true), 1000); // 1s Auto-refresh
+        const delayDebounce = setTimeout(() => fetchProducts(false), 300);
+        const pollInterval = setInterval(() => fetchProducts(true), 1000); 
 
         return () => {
-            clearTimeout(delayDebounceFn);
-            clearInterval(intervalId);
+            clearTimeout(delayDebounce);
+            clearInterval(pollInterval);
         };
     }, [searchTerm, token, currentPage]);
 
-    const handleNextPage = () => { if (currentPage < lastPage) setCurrentPage(prev => prev + 1); };
-    const handlePrevPage = () => { if (currentPage > 1) setCurrentPage(prev => prev - 1); };
+    const handleNextPage = () => { if (currentPage < lastPage) setCurrentPage(p => p + 1); };
+    const handlePrevPage = () => { if (currentPage > 1) setCurrentPage(p => p - 1); };
 
     const toggleRow = (id) => setExpandedRowId(prev => (prev === id ? null : id));
     
@@ -122,14 +113,14 @@ export default function ProTable({ searchTerm }) {
         const baseUrl = process.env.NEXT_PUBLIC_API_URL;
         
         try {
-            const response = await fetch(`${baseUrl}/api/product-delete/${id}`, {
+            const res = await fetch(`${baseUrl}/api/product-delete/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
             });
 
-            if (!response.ok) throw new Error('Delete failed');
+            if (!res.ok) throw new Error('Delete failed');
 
-            setProducts(prev => Array.isArray(prev) ? prev.filter(p => p.id !== id) : []);
+            setProducts(prev => prev.filter(p => p.id !== id));
             if (expandedRowId === id) setExpandedRowId(null);
         } catch (error) {
             alert('ការលុបបរាជ័យ សូមព្យាយាមម្តងទៀត។');
@@ -138,9 +129,6 @@ export default function ProTable({ searchTerm }) {
 
     const productsList = Array.isArray(products) ? products : [];
 
-    // ===========================
-    // 4. LOADING STATE
-    // ===========================
     if (loading && productsList.length === 0) {
         return (
             <div className="p-12 text-center text-slate-500 bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center justify-center gap-2 font-['Kantumruy_Pro']">
@@ -150,11 +138,9 @@ export default function ProTable({ searchTerm }) {
         );
     }
 
-    // ===========================
-    // 5. RENDER UI
-    // ===========================
     return (
-        <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden transition-all duration-300 font-['Kantumruy_Pro']">
+        <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden font-['Kantumruy_Pro']">
+            
             {/* Header */}
             <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
                 <div className="flex items-center gap-3">
@@ -182,7 +168,6 @@ export default function ProTable({ searchTerm }) {
                 </div>
             )}
 
-            {/* Table Content */}
             <div className={`grid transition-all duration-500 ease-in-out ${isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
                 <div className="overflow-hidden">
                     <div className="overflow-x-auto">
@@ -299,6 +284,7 @@ export default function ProTable({ searchTerm }) {
                                                             isExpanded ? 'grid-rows-[1fr] opacity-100 p-6 border-b border-slate-200' : 'grid-rows-[0fr] opacity-0 p-0 border-none'
                                                         }`}>
                                                             <div className="overflow-hidden space-y-6 max-w-5xl mx-auto w-full">
+                                                                
                                                                 {/* Details Info Card */}
                                                                 <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
                                                                     <div className="md:col-span-3 flex flex-col gap-3 items-center justify-center bg-slate-50 p-3 rounded-xl border border-slate-100">
@@ -358,6 +344,7 @@ export default function ProTable({ searchTerm }) {
                                                                         </div>
                                                                     </div>
                                                                 </div>
+
                                                             </div>
                                                         </div>
                                                     </td>
@@ -370,7 +357,6 @@ export default function ProTable({ searchTerm }) {
                         </table>
                     </div>
 
-                    {/* Pagination Footer */}
                     <div className="p-4 border-t border-slate-200 bg-slate-50/50 flex items-center justify-between">
                         <span className="text-xs text-slate-500 font-medium">
                             ទំព័រ <span className="font-bold text-slate-700">{currentPage}</span> / <span className="font-bold text-slate-700">{lastPage}</span> (សរុប: {totalProducts})

@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { Play, ChevronLeft, ChevronRight, Sparkles, LayoutGrid, Rows, Loader2 } from 'lucide-react';
 
 export default function VideoReview() {
+  const router = useRouter();
   const scrollRef = useRef(null);
   const [showAll, setShowAll] = useState(false);
   const [reels, setReels] = useState([]);
@@ -67,6 +69,11 @@ export default function VideoReview() {
     }
   };
 
+  // 🚀 Function to handle video card click
+  const handleCardClick = (id) => {
+    router.push(`/video/${id}`);
+  };  
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-6 font-['Kantumruy_Pro']">
       
@@ -74,7 +81,7 @@ export default function VideoReview() {
         <div>
           <h2 className="text-lg sm:text-xl font-black text-gray-900 flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-blue-600" />
-            វីដេអូសម្រាប់ផលិតផល <span className="text-xs font-normal text-gray-500"></span>
+            វីដេអូសម្រាប់ផលិតផល
           </h2>
           <p className="text-xs text-gray-500">ទស្សនាវីដេអូផលិតផលជាក់ស្តែងពីប្រព័ន្ធ</p>
         </div>
@@ -132,7 +139,8 @@ export default function VideoReview() {
             {reels.map((reel) => (
               <div 
                 key={reel.id}
-                className="w-full h-48 sm:h-72 rounded-2xl relative overflow-hidden group shadow-md bg-gray-900 cursor-pointer border border-gray-100"
+                onClick={() => handleCardClick(reel.id)}
+                className="w-full h-48 sm:h-72 rounded-2xl relative overflow-hidden group shadow-md bg-gray-900 cursor-pointer border border-gray-100 active:scale-95 transition-all"
               >
                 <video 
                   src={reel.videoUrl}
@@ -159,7 +167,8 @@ export default function VideoReview() {
             {reels.map((reel) => (
               <div 
                 key={reel.id}
-                className="flex-shrink-0 w-32 h-48 sm:w-48 sm:h-72 rounded-2xl relative overflow-hidden group snap-start shadow-md bg-gray-900 cursor-pointer border border-gray-100"
+                onClick={() => handleCardClick(reel.id)}
+                className="flex-shrink-0 w-32 h-48 sm:w-48 sm:h-72 rounded-2xl relative overflow-hidden group snap-start shadow-md bg-gray-900 cursor-pointer border border-gray-100 active:scale-95 transition-all"
               >
                 <video 
                   src={reel.videoUrl}
