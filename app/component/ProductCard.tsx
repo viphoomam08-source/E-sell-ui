@@ -35,7 +35,7 @@ export default function ProductCard({ selectedSubId }) {
     setAlertState(prev => ({ ...prev, isOpen: false }));
   };
 
-  const fetchProducts = async (isBackground = false) => {
+  const fetchProducts = async () => {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/product_no_discount`, {
         method: 'GET',
@@ -46,28 +46,18 @@ export default function ProductCard({ selectedSubId }) {
       
       const productArray = data.product || data.data || data.products || data;
       setProducts(Array.isArray(productArray) ? productArray : []);
-      
-      if (!isBackground) setLoading(false);
+      setLoading(false);
     } catch (err) {
-      if (!isBackground) {
-        setError('cant show product');
-        setLoading(false);
-      }
+      setError('cant show product');
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     const timer = setTimeout(() => setIsLoaded(true), 50);
-    fetchProducts(false);
+    fetchProducts();
 
-    const interval = setInterval(() => {
-      fetchProducts(true);
-    }, 2000);
-
-    return () => {
-      clearTimeout(timer);
-      clearInterval(interval);
-    };
+    return () => clearTimeout(timer);
   }, []);
 
   const handleMouseEnterCard = (product) => {
@@ -87,7 +77,7 @@ export default function ProductCard({ selectedSubId }) {
           p.subcategory_id ?? 
           p.sub_category?.id ??
           p.cat_id;
-        return prodCatId == selectedSubId;
+        return String(prodCatId) === String(selectedSubId);
       }) 
     : products;
 
@@ -158,7 +148,7 @@ export default function ProductCard({ selectedSubId }) {
   if (error) return <div className="max-w-md mx-auto my-6 p-3 bg-red-50 text-red-600 rounded-xl text-center text-xs">⚠️ Error: {error}</div>;
 
   return (
-    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-5 relative">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-5 relative font-['Kantumruy_Pro']">
       <CustomAlert isOpen={alertState.isOpen} type={alertState.type} message={alertState.message} onClose={closeAlert} onConfirm={alertState.onConfirm} />
       <ViewPro product={selectedProduct} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onAddToCart={handleAddToCart} showAlert={showAlert} />
 
@@ -199,8 +189,8 @@ export default function ProductCard({ selectedSubId }) {
         </div>
       ) : (
         <div className="relative w-full overflow-hidden">
-          <div className="absolute left-0 top-0 bottom-0 w-8 sm:w-12 bg-gradient-to-r from-white via-white/60 to-transparent z-10 pointer-events-none" />
-          <div className="absolute right-0 top-0 bottom-0 w-8 sm:w-12 bg-gradient-to-l from-white via-white/60 to-transparent z-10 pointer-events-none" />
+          <div className="absolute left-0 top-0 bottom-0 w-8 sm:w-12 bg-gradient-to-r from-slate-50 via-slate-50/60 to-transparent z-10 pointer-events-none" />
+          <div className="absolute right-0 top-0 bottom-0 w-8 sm:w-12 bg-gradient-to-l from-slate-50 via-slate-50/60 to-transparent z-10 pointer-events-none" />
 
           <div ref={scrollContainerRef} className="flex gap-3.5 overflow-x-auto pb-4 pt-1 px-2 scroll-smooth [&::-webkit-scrollbar]:hidden">
             {filteredProducts.map((product, index) => renderProductCard(product, true, index))}
@@ -215,6 +205,7 @@ export default function ProductCard({ selectedSubId }) {
     const sellerName = product.seller?.seller_name || "គ្មានឈ្មោះ";
     const sellerPic = product.seller?.profile_pic || product.seller?.Image;
     const categoryName = product.category?.category_name || 'គ្មានប្រភេទ';
+    const productPrice = Number(product.product_price || 0);
     const animationDelay = `${Math.min(index * 40, 600)}ms`;
     const isThisHovered = hoveredProductId === product.id;
 
@@ -254,7 +245,7 @@ export default function ProductCard({ selectedSubId }) {
           </div>
 
           <div className="p-3 flex flex-col" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-50/80 px-2 py-0.5 rounded-md w-fit mb-1.5 border border-blue-100/50">
+            <div className="flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md w-fit mb-1.5 border border-blue-100/50">
               <Tag className="w-2.5 h-2.5" />
               <span className="truncate max-w-[110px]">{categoryName}</span>
             </div>
@@ -273,15 +264,20 @@ export default function ProductCard({ selectedSubId }) {
               <h3 className="text-xs font-bold text-slate-900 line-clamp-1 group-hover:text-blue-600 transition-colors">
                 {product.product_name}
               </h3>
-              <div className="flex items-center justify-between mt-1.5">
-                <span className="text-xs sm:text-sm font-extrabold text-blue-600">
-                  ${product.product_price}
-                </span>
-                {product.product_stock !== undefined && (
-                  <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-md ${product.product_stock > 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100'}`}>
-                    {product.product_stock > 0 ? `Stock: ${product.product_stock}` : 'Out'}
+              <div className="flex flex-col mt-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs sm:text-sm font-extrabold text-blue-600">
+                    ${productPrice.toFixed(2)}
                   </span>
-                )}
+                  {product.product_stock !== undefined && (
+                    <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-md ${product.product_stock > 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100'}`}>
+                      {product.product_stock > 0 ? `Stock: ${product.product_stock}` : 'Out'}
+                    </span>
+                  )}
+                </div>
+                <span className="text-[10px] text-slate-400 mt-0.5">
+                  ≈ {(productPrice * 4100).toLocaleString()}៛
+                </span>
               </div>
             </div>
 
@@ -318,7 +314,10 @@ export default function ProductCard({ selectedSubId }) {
             </div>
 
             <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-              <span className="text-xs font-extrabold text-blue-600">${product.product_price}</span>
+              <div className="flex flex-col">
+                <span className="text-xs font-extrabold text-blue-600">${productPrice.toFixed(2)}</span>
+                <span className="text-[9px] text-slate-400">≈ {(productPrice * 4100).toLocaleString()}៛</span>
+              </div>
               <button 
                 onClick={(e) => handleAddToCart(product, 1, e)}
                 className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold rounded-lg shadow-xs transition-all cursor-pointer"
