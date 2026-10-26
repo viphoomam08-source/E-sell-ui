@@ -13,7 +13,9 @@ import Dicount from './component/dicount';
 import ShortAnounce from './component/shortAnounce';
 import Progress from './component/progress';
 import Buyer_name from './component/buyer_name';
+import Collection from "./component/collection";
 import BannerPopup from "./component/bannerPopup";
+import Brand from './component/brand';
 import VideoReview from "./component/videoReview";
 import LocationPopup from "./dashboard/component/modal/tracklocation";
 import Page from './product/[id]/page';
@@ -55,12 +57,13 @@ export default function Home() {
 
         <VideoReview />
         <Dicount />
-
+<Brand/>  
         <Category 
+
           onSelectSubcategory={(subId) => setSelectedSubId(subId)} 
           selectedSubId={selectedSubId} 
         />
-
+<Collection/>
         <Shop />
 
         <ProductCard selectedSubId={selectedSubId} />

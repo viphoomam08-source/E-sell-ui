@@ -51,8 +51,13 @@ export default function Page({ selectedSubId }) {
 
   // ==================== 2. API CALLS ====================
   useEffect(() => {
+    // បើមាន selectedSubId អាចប្តូរ Endpoint ទៅតាម API របស់អ្នក (ឧទាហរណ៍: /api/products-by-sub/${selectedSubId})
+    const productApiUrl = selectedSubId 
+      ? `${process.env.NEXT_PUBLIC_API_URL}/api/products-by-sub/${selectedSubId}?page=1`
+      : `${process.env.NEXT_PUBLIC_API_URL}/api/product-all?page=1`;
+
     Promise.all([
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/product-all?page=1`, { headers: { 'Accept': 'application/json' } }).then(res => res.json()),
+      fetch(productApiUrl, { headers: { 'Accept': 'application/json' } }).then(res => res.json()),
       fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/category-list`, { headers: { 'Accept': 'application/json' } }).then(res => res.json())
     ])
       .then(([prodData, catData]) => {
@@ -76,7 +81,7 @@ export default function Page({ selectedSubId }) {
         setError(err.message);
         setLoading(false);
       });
-  }, []);
+  }, [selectedSubId]);
 
   const loadMoreProducts = async () => {
     if (loadingMore || !hasMore) return;
@@ -117,8 +122,9 @@ export default function Page({ selectedSubId }) {
       }
     }, { threshold: 1.0 });
 
-    if (loaderRef.current) observer.observe(loaderRef.current);
-    return () => { if (loaderRef.current) observer.unobserve(loaderRef.current); };
+    const currentLoader = loaderRef.current;
+    if (currentLoader) observer.observe(currentLoader);
+    return () => { if (currentLoader) observer.unobserve(currentLoader); };
   }, [hasMore, loading, page, loadingMore]);
 
   // ==================== 3. FILTER & SORT LOGIC ====================
@@ -184,12 +190,11 @@ export default function Page({ selectedSubId }) {
 
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
         
-        {/* Top bar: Mobile Filter Toggle, Result Count & Sorting */}
+        {/* Top bar */}
         <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center mb-4 sm:mb-6 gap-3">
           <div className="flex items-center justify-between">
             <p className="text-gray-600 text-xs sm:text-sm font-medium">{filteredProducts.length} Results found</p>
             
-            {/* Mobile Filter Button */}
             <button 
               onClick={() => setIsMobileFilterOpen(true)}
               className="lg:hidden flex items-center gap-1.5 bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-xs"
@@ -216,7 +221,7 @@ export default function Page({ selectedSubId }) {
         {/* Main Grid Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
           
-          {/* DESKTOP LEFT SIDEBAR: FILTERS */}
+          {/* DESKTOP SIDEBAR */}
           <div className="hidden lg:block lg:col-span-1 space-y-4 sticky top-20">
             <FilterSidebar 
               categories={categories}
@@ -231,10 +236,10 @@ export default function Page({ selectedSubId }) {
             />
           </div>
 
-          {/* MOBILE FILTER MODAL / DRAWER */}
+          {/* MOBILE DRAWER */}
           {isMobileFilterOpen && (
             <div className="fixed inset-0 z-50 flex lg:hidden bg-black/50 backdrop-blur-xs">
-              <div className="w-4/5 max-w-xs bg-white h-full overflow-y-auto p-4 flex flex-col justify-between shadow-xl animate-in slide-in-from-left duration-300">
+              <div className="w-4/5 max-w-xs bg-white h-full overflow-y-auto p-4 flex flex-col justify-between shadow-xl">
                 <div>
                   <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
                     <h3 className="font-bold text-gray-900 text-sm flex items-center gap-1.5">
@@ -292,7 +297,6 @@ export default function Page({ selectedSubId }) {
                   ))}
                 </div>
 
-                {/* Infinite Scroll Loader Indicator */}
                 <div ref={loaderRef} className="py-8 text-center">
                   {loadingMore && (
                     <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-blue-600">
@@ -312,7 +316,7 @@ export default function Page({ selectedSubId }) {
   );
 }
 
-// ==================== SUB-COMPONENTS FOR CLEANLINESS ====================
+// ==================== SUB-COMPONENTS ====================
 
 function FilterSidebar({ 
   categories, brands, products, 
@@ -322,7 +326,6 @@ function FilterSidebar({
 }) {
   return (
     <>
-      {/* Categories Filter */}
       <div className="bg-white p-3.5 sm:p-4 rounded-xl shadow-xs border border-gray-100">
         <h3 className="font-semibold text-gray-800 text-xs sm:text-sm mb-3">Categories</h3>
         <ul className="space-y-2 text-xs sm:text-sm text-gray-600 max-h-60 overflow-y-auto pr-1">
@@ -348,7 +351,6 @@ function FilterSidebar({
         </ul>
       </div>
 
-      {/* Brands Filter */}
       <div className="bg-white p-3.5 sm:p-4 rounded-xl shadow-xs border border-gray-100">
         <h3 className="font-semibold text-gray-800 text-xs sm:text-sm mb-3">Brands</h3>
         {brands.length === 0 ? <p className="text-[11px] text-gray-400">No brands available</p> : (
@@ -368,7 +370,6 @@ function FilterSidebar({
         )}
       </div>
 
-      {/* Price Ranges Filter */}
       <div className="bg-white p-3.5 sm:p-4 rounded-xl shadow-xs border border-gray-100">
         <h3 className="font-semibold text-gray-800 text-xs sm:text-sm mb-3">Price Ranges</h3>
         <ul className="space-y-2 text-xs sm:text-sm text-gray-600">

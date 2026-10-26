@@ -115,7 +115,6 @@ export default function Category({ onSelectSubcategory, selectedSubId }) {
         <div className="sticky top-[70px] sm:top-[80px] z-40 w-full bg-white/95 backdrop-blur-md border-b border-slate-100 transition-all shadow-xs" style={{ fontFamily: "'Kantumruy Pro', sans-serif" }}>
             <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-2.5 space-y-2.5">
                 
-                {/* Clean Category List Container */}
                 <div className="relative">
                     <div ref={scrollRef} className="flex items-start space-x-4 overflow-x-auto scroll-smooth py-1 [&::-webkit-scrollbar]:hidden">
                         {categories.map((cat) => (
@@ -130,7 +129,6 @@ export default function Category({ onSelectSubcategory, selectedSubId }) {
                     </div>
                 </div>
 
-                {/* Subcategories - Minimal Floating Chips */}
                 <div className={`transition-all duration-300 ease-in-out overflow-hidden ${hasChildren ? 'max-h-24 opacity-100 pt-1' : 'max-h-0 opacity-0 py-0'}`}>
                     {selectedCategory && (
                         <div className="flex items-center gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden py-1">
