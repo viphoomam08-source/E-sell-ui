@@ -2,11 +2,11 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useCart } from '../component/CartContext'; // ផ្ទៀងផ្ទាត់ផ្លូវ Path ទៅកាន់ CartContext របស់អ្នក
+import { useCart } from '../component/CartContext'; 
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { cart, totalItems, totalPrice, clearCart } = useCart(); // បន្ថែម clearCart ដើម្បីជម្រះកន្ត្រកពេលបញ្ជាទិញរួច
+  const { cart, totalItems, totalPrice, clearCart } = useCart(); 
   const [loading, setLoading] = useState(false);
   
   // State សម្រាប់ទម្រង់ទូទាត់
@@ -72,7 +72,6 @@ export default function CheckoutPage() {
             items: orderItems // បញ្ជូនបញ្ជីទំនិញក្នុងកន្ត្រកទៅកាន់ Controller
         })
       });
-
       const data = await response.json();
 
       if (response.ok && (data.status || data.order_code || data.data)) {

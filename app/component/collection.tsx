@@ -65,7 +65,6 @@ function collection() {
           </span>
         </div>
 
-        {/* Flexible Container (จัดเรียงติดกันสวยงาม ไม่ยืดเต็มช่องว่าง) */}
         <div className="flex flex-wrap items-center gap-4 sm:gap-6">
           {currentCategories.map((item, index) => {
             const imgUrl = item.image_category 
@@ -78,7 +77,6 @@ function collection() {
                 href={`/collection/${item.id}`}
                 className="w-28 sm:w-32 flex flex-col items-center justify-center gap-3 group cursor-pointer"
               >
-                {/* Bigger Picture Container */}
                 <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-white shadow-sm border border-blue-100/60 flex items-center justify-center overflow-hidden group-hover:scale-105 group-hover:border-blue-400 group-hover:shadow-md transition-all duration-300">
                   {imgUrl ? (
                     <img 
@@ -91,7 +89,6 @@ function collection() {
                   )}
                 </div>
 
-                {/* Title */}
                 <span className="text-xs sm:text-sm font-bold text-slate-700 group-hover:text-blue-600 transition-colors text-center truncate w-full">
                   {item.category_name}
                 </span>
@@ -100,7 +97,6 @@ function collection() {
           })}
         </div>
 
-        {/* Pagination Controls */}
         {totalPages > 1 && (
           <div className="flex items-center justify-center gap-2 mt-6 pt-4 border-t border-blue-100/80">
             <button

@@ -13,8 +13,6 @@ function CollectionDetailPage() {
 
   useEffect(() => {
     if (!id) return;
-
-    // ហៅ API តាម ID របស់ Category កូន
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/collection/${id}`, {
       headers: { 'Accept': 'application/json' }
     })
@@ -22,7 +20,7 @@ function CollectionDetailPage() {
         if (!res.ok) throw new Error('Failed to fetch collection details');
         return res.json();
       })
-      .then((data) => {
+      .then((data) => { 
         console.log("Collection Detail Response:", data);
         setCategory(data.category || null);
         setProducts(data.product || []);
@@ -45,7 +43,6 @@ function CollectionDetailPage() {
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 my-6 font-['Kantumruy_Pro']">
       
-      {/* 💙 Soft Blue Background Wrapper */}
       <div className="bg-gradient-to-br from-blue-50/90 via-sky-50/50 to-indigo-50/60 rounded-3xl border border-blue-100/90 p-5 sm:p-8 shadow-xs">
         
         {/* Navigation Back & Title Header */}
@@ -96,30 +93,93 @@ function CollectionDetailPage() {
               ⚠️ មិនទាន់មានផលិតផលនៅក្នុងបណ្តុំនេះនៅឡើយទេ។
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5 items-start">
               {products.map((prod) => {
                 const prodImg = prod.image || prod.product_image || prod.image_url;
                 const fullProdImg = prodImg 
                   ? `${process.env.NEXT_PUBLIC_API_URL}/storage/${prodImg}` 
-                  : null;
+                  : "https://images.unsplash.com/photo-1542291026-7eec264c27ff";
+
+                const sellerName = prod.seller?.seller_name || "គ្មានឈ្មោះ";
+                const sellerPic = prod.seller?.profile_pic || prod.seller?.Image;
+                const categoryName = prod.category?.category_name || category?.category_name || 'គ្មានប្រភេទ';
+                const productPrice = Number(prod.product_price || prod.price || 0);
 
                 return (
-                  <div key={prod.id} className="bg-white rounded-2xl p-4 border border-blue-100/80 shadow-2xs hover:shadow-md transition-all flex flex-col gap-2 group cursor-pointer">
-                    {/* Image Container with object-contain to show full picture */}
-                    <div className="h-36 bg-blue-50/20 rounded-xl overflow-hidden flex items-center justify-center border border-blue-50 p-2">
-                      {fullProdImg ? (
-                        <img 
-                          src={fullProdImg} 
-                          alt={prod.product_name} 
-                          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" 
-                        />
-                      ) : (
-                        <span className="text-blue-400 font-bold text-xs">🛍️ គ្មានរូបភាព</span>
-                      )}
+                  <Link 
+                    key={prod.id}
+                    href={`/product/${prod.id}`}
+                    className="group bg-white rounded-xl border border-slate-200/90 shadow-sm hover:shadow-lg hover:border-blue-400/60 transition-all duration-300 flex flex-col overflow-hidden relative cursor-pointer transform hover:-translate-y-1 w-full"
+                  >
+                    {/* Badge */}
+                    <div className="absolute top-2 left-2 z-10 bg-blue-600/90 backdrop-blur-md text-white text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded shadow-xs">
+                      New
                     </div>
-                    <span className="text-xs font-bold text-slate-800 truncate mt-1">{prod.product_name || prod.name}</span>
-                    <span className="text-xs font-extrabold text-blue-600">${prod.price || '0.00'}</span>
-                  </div>
+
+                    {/* Image Container */}
+                    <div className="w-full h-28 sm:h-36 bg-slate-100 relative overflow-hidden flex items-center justify-center">
+                      <img 
+                        src={fullProdImg} 
+                        alt={prod.product_name || prod.name} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out" 
+                      />
+                    </div>
+
+                    {/* Details Content */}
+                    <div className="p-2.5 flex flex-col">
+                      {/* Category Tag */}
+                      <div className="flex items-center gap-1 text-[9px] font-semibold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded w-fit mb-1 border border-blue-100/50">
+                        <span className="truncate max-w-[90px]">🏷️ {categoryName}</span>
+                      </div>
+
+                      {/* Store Details */}
+                      <div className="flex items-center gap-1.5 mb-1.5 pb-1.5 border-b border-slate-100">
+                        <div className="w-5 h-5 rounded-full overflow-hidden bg-slate-100 shrink-0 border border-slate-200">
+                          {sellerPic ? (
+                            <img src={`${process.env.NEXT_PUBLIC_API_URL}/storage/${sellerPic}`} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full bg-blue-100 text-blue-600 font-bold text-[8px] flex items-center justify-center">S</div>
+                          )}
+                        </div>
+                        <div className="flex flex-col truncate">
+                          <span className="text-[7px] text-slate-400 uppercase font-medium leading-none">Store</span>
+                          <span className="text-[9px] font-bold text-slate-700 truncate">{sellerName}</span>
+                        </div>
+                      </div>
+
+                      {/* Title & Price */}
+                      <div className="mb-1.5">
+                        <h3 className="text-[11px] font-bold text-slate-900 line-clamp-1 group-hover:text-blue-600 transition-colors">
+                          {prod.product_name || prod.name}
+                        </h3>
+                        <div className="flex flex-col mt-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-extrabold text-blue-600">
+                              ${productPrice.toFixed(2)}
+                            </span>
+                            {prod.product_stock !== undefined && (
+                              <span className={`text-[8px] font-semibold px-1 py-0.2 rounded ${prod.product_stock > 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100'}`}>
+                                {prod.product_stock > 0 ? `Stock: ${prod.product_stock}` : 'Out'}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[9px] text-slate-400">
+                            ≈ {(productPrice * 4100).toLocaleString()}៛
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Footer Action */}
+                      <div className="flex items-center justify-between pt-1.5 border-t border-slate-100/80">
+                        <span className="text-[10px] font-bold text-blue-600 group-hover:underline">
+                          View Details
+                        </span>
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-blue-600 text-white shadow-sm group-hover:bg-blue-700 transition-all text-xs font-bold">
+                          🛒
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
                 );
               })}
             </div>
