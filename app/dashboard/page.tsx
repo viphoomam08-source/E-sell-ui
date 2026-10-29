@@ -15,7 +15,7 @@ import AuditLog from './component/audit';
 import Report from './component/Report';
 import SellerChatModule from './component/SellerChatModule';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function App() {
   const [activeModule, setActiveModule] = useState('dashboard');
